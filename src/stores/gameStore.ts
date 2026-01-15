@@ -6,7 +6,6 @@ import { calculateWinProbabilities } from '../utils/winProbability';
 import { evaluateHand, determineWinner } from '../utils/pokerHands';
 import { calculateShares, getTotalAmountPaid, getTotalShares, getPotentialPayout } from '../utils/marketPricing';
 import { getShortHandDescription } from '../utils/handDescription';
-import type { RoundHistoryItem } from '../types';
 
 interface GameStore extends GameState {
   // Actions
@@ -395,7 +394,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().resolveRound('player');
       } else {
         const result = determineWinner(playerHand, dealerHand);
-        const winningHand = result === 'player' ? playerHand : dealerHand;
         const winningCards = result === 'player' ? playerCards : [...dealerCards, dCard2];
         const handDescription = getShortHandDescription(winningCards, communityCards);
         

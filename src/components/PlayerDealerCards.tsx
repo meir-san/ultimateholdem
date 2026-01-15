@@ -38,7 +38,6 @@ function getHoleCardDescription(holeCards: Card[], communityCards: Card[]): stri
   }
 
   const holeRanks = holeCards.map(c => c.rank);
-  const boardRanks = communityCards.map(c => c.rank);
   const sortedHole = [...holeCards].sort((a, b) => b.rank - a.rank);
   const sortedBoard = [...communityCards].sort((a, b) => b.rank - a.rank);
 

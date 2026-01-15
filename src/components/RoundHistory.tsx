@@ -15,7 +15,6 @@ export function RoundHistory({ roundHistory }: RoundHistoryProps) {
         {roundHistory.map((item, index) => {
           const isPlayer = item.winner === 'player';
           const isDealer = item.winner === 'dealer';
-          const isPush = item.winner === 'push';
           
           return (
             <div key={index} className="flex items-center gap-2">

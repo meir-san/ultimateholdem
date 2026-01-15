@@ -1,4 +1,4 @@
-import type { Card, EvaluatedHand } from '../types';
+import type { Card } from '../types';
 import { HandRank } from '../types';
 import { evaluateHand } from './pokerHands';
 

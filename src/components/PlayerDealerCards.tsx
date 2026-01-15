@@ -403,17 +403,16 @@ export function PlayerDealerCards({
         </div>
       </div>
 
-      {/* Community Cards (if any) */}
-      {communityCards.length > 0 && (
-        <div className="col-span-2 bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
-          <div className="text-xs text-slate-300 uppercase tracking-wide mb-2 text-center">Community Cards</div>
-          <div className="flex gap-2 justify-center">
-            {communityCards.map((card, i) => (
-              <CardDisplay key={i} card={card} />
-            ))}
-          </div>
+      {/* Community Cards - Always show 5 slots (3 flop, 1 turn, 1 river) */}
+      <div className="col-span-2 bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
+        <div className="text-xs text-slate-300 uppercase tracking-wide mb-2 text-center">Flop</div>
+        <div className="flex gap-2 justify-center">
+          {/* Always show 5 slots: 3 for flop, 1 for turn, 1 for river */}
+          {[0, 1, 2, 3, 4].map((i) => (
+            <CardDisplay key={i} card={communityCards[i] || null} hidden={!communityCards[i]} />
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }

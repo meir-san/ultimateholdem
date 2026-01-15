@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useGameStore } from './stores/gameStore';
 import { PlayerDealerCards } from './components/PlayerDealerCards';
 import { PhaseTimer } from './components/PhaseTimer';
@@ -55,6 +55,7 @@ function App() {
 
   const shouldAdvanceRef = useRef(false);
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showFeesOverlay, setShowFeesOverlay] = useState(false);
 
   // Initialize game
   useEffect(() => {
@@ -275,9 +276,16 @@ function App() {
               <span className="text-slate-300">Volume </span>
               <span className="text-yellow-400 font-bold">${lifetimeVolume.toFixed(0)}</span>
             </div>
-            <div>
+            <div className="flex items-center gap-1">
               <span className="text-slate-300">Fees </span>
               <span className="text-rose-400 font-bold">${(lifetimeVolume * 0.035).toFixed(2)}</span>
+              <button
+                onClick={() => setShowFeesOverlay(true)}
+                className="w-4 h-4 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition-colors"
+                aria-label="Show fee breakdown"
+              >
+                ?
+              </button>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -449,6 +457,51 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Fees Breakdown Overlay */}
+      {showFeesOverlay && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center" onClick={() => setShowFeesOverlay(false)}>
+          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-6 max-w-sm mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white">Fee Breakdown</h3>
+              <button
+                onClick={() => setShowFeesOverlay(false)}
+                className="w-8 h-8 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white flex items-center justify-center text-lg transition-colors"
+              >
+                ×
+              </button>
+            </div>
+            <p className="text-slate-400 text-sm mb-4">3.5% total rake on all volume</p>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b border-slate-700">
+                <span className="text-slate-300">Buyback & Burn</span>
+                <div className="text-right">
+                  <span className="text-rose-400 font-bold">${(lifetimeVolume * 0.015).toFixed(2)}</span>
+                  <span className="text-slate-500 text-sm ml-2">1.5%</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-slate-700">
+                <span className="text-slate-300">Liquidity</span>
+                <div className="text-right">
+                  <span className="text-rose-400 font-bold">${(lifetimeVolume * 0.015).toFixed(2)}</span>
+                  <span className="text-slate-500 text-sm ml-2">1.5%</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between py-2">
+                <span className="text-slate-300">Traffic</span>
+                <div className="text-right">
+                  <span className="text-rose-400 font-bold">${(lifetimeVolume * 0.005).toFixed(2)}</span>
+                  <span className="text-slate-500 text-sm ml-2">0.5%</span>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-600 flex items-center justify-between">
+              <span className="text-white font-semibold">Total Fees</span>
+              <span className="text-rose-400 font-bold text-lg">${(lifetimeVolume * 0.035).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Developer Credit */}
       <div className="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 px-4 py-2 z-10">

@@ -15,7 +15,6 @@ export const PHASES = {
 export type Phase = typeof PHASES[keyof typeof PHASES];
 
 export const PREDICTION_WINDOW = 15; // seconds
-export const CARD_DEAL_DELAY = 1500; // milliseconds between cards in the same phase (1.5 seconds)
 export const PLATFORM_FEE = 0.035; // 3.5% rake
 export const INITIAL_BALANCE = 100;
 export const INITIAL_POOL_BASE = 1000;

@@ -7,8 +7,92 @@ import { evaluateHand, determineWinner } from './pokerHands';
 import { shouldRaise4x, shouldRaise2x, shouldRaise1x } from './uthStrategy';
 
 /**
- * Calculates win probabilities using Monte Carlo simulation
- * Simulates remaining cards and auto-plays both sides using strategy
+ * Generates all 2-card combinations from deck (for exact enumeration)
+ */
+function generateTwoCardCombinations(deck: Card[]): [Card, Card][] {
+  const combinations: [Card, Card][] = [];
+  for (let i = 0; i < deck.length; i++) {
+    for (let j = i + 1; j < deck.length; j++) {
+      combinations.push([deck[i], deck[j]]);
+    }
+  }
+  return combinations;
+}
+
+/**
+ * Calculates exact win probabilities when only dealer cards are unknown (RIVER phase)
+ * Enumerates all possible dealer hole card combinations
+ */
+function calculateExactProbabilities(
+  playerHoleCards: Card[],
+  communityCards: Card[],
+  deck: Card[]
+): TrueOdds {
+  let playerWins = 0;
+  let dealerWins = 0;
+  let pushes = 0;
+
+  // Generate all possible dealer hole card combinations
+  const dealerCombinations = generateTwoCardCombinations(deck);
+  const totalCombinations = dealerCombinations.length;
+
+  for (const [dCard1, dCard2] of dealerCombinations) {
+    const dealerHoleCards = [dCard1, dCard2];
+
+    // Simulate player decisions
+    let playerFolded = false;
+
+    // Pre-flop decision
+    let playerRaisedPreflop = shouldRaise4x(playerHoleCards);
+
+    // Post-flop decision (if didn't raise pre-flop)
+    let playerRaisedPostflop = false;
+    if (!playerRaisedPreflop && communityCards.length >= 3) {
+      playerRaisedPostflop = shouldRaise2x(playerHoleCards, communityCards.slice(0, 3));
+    }
+
+    // Turn/river decision (if checked twice)
+    if (!playerRaisedPreflop && !playerRaisedPostflop && communityCards.length >= 5) {
+      if (!shouldRaise1x(playerHoleCards, communityCards)) {
+        playerFolded = true;
+      }
+    }
+
+    // If player folded, dealer wins
+    if (playerFolded) {
+      dealerWins++;
+      continue;
+    }
+
+    // Evaluate final hands
+    const playerHand = evaluateHand([...playerHoleCards, ...communityCards]);
+    const dealerHand = evaluateHand([...dealerHoleCards, ...communityCards]);
+
+    // Check dealer qualification (needs pair or better)
+    if (dealerHand.rank < 2) {
+      // Dealer doesn't qualify - player wins
+      playerWins++;
+      continue;
+    }
+
+    // Compare hands
+    const result = determineWinner(playerHand, dealerHand);
+    if (result === 'player') playerWins++;
+    else if (result === 'dealer') dealerWins++;
+    else pushes++;
+  }
+
+  return {
+    player: (playerWins / totalCombinations) * 100,
+    dealer: (dealerWins / totalCombinations) * 100,
+    push: (pushes / totalCombinations) * 100,
+  };
+}
+
+/**
+ * Calculates win probabilities using Monte Carlo simulation or exact enumeration
+ * Uses exact enumeration for RIVER phase when only dealer cards are unknown
+ * Otherwise uses Monte Carlo simulation
  */
 export function calculateWinProbabilities(
   playerHoleCards: Card[],
@@ -17,6 +101,15 @@ export function calculateWinProbabilities(
   deck: Card[],
   phase: Phase
 ): TrueOdds {
+  // Use exact enumeration for RIVER phase when only dealer cards are unknown
+  if (phase === PHASES.RIVER &&
+      playerHoleCards.length === 2 &&
+      dealerHoleCards.length === 0 &&
+      communityCards.length === 5) {
+    return calculateExactProbabilities(playerHoleCards, communityCards, deck);
+  }
+
+  // Use Monte Carlo for all other cases
   let playerWins = 0;
   let dealerWins = 0;
   let pushes = 0;
@@ -64,24 +157,43 @@ function simulateGame(
   }
 
   // Deal community cards based on phase
-  if (phase === PHASES.PRE_DEAL || phase === PHASES.HOLE_CARDS) {
-    // Deal flop
-    if (simCommunity.length < 3 && simDeck.length >= 3) {
-      simCommunity.push(simDeck.pop()!, simDeck.pop()!, simDeck.pop()!);
+  // For phases before community cards, deal all community cards
+  if (phase === PHASES.PRE_DEAL || 
+      phase === PHASES.PLAYER_CARD_1 || 
+      phase === PHASES.PLAYER_CARD_2) {
+    // Deal all community cards (flop, turn, river)
+    if (simCommunity.length < 5 && simDeck.length >= (5 - simCommunity.length)) {
+      while (simCommunity.length < 5) {
+        simCommunity.push(simDeck.pop()!);
+      }
     }
   }
 
-  if (phase === PHASES.FLOP || phase === PHASES.POSTFLOP_DECISION) {
-    // Already have flop, deal turn and river
-    if (simCommunity.length < 5 && simDeck.length >= 2) {
-      simCommunity.push(simDeck.pop()!, simDeck.pop()!);
+  // For flop card phases, deal remaining community cards
+  if (phase === PHASES.FLOP_CARD_1 || 
+      phase === PHASES.FLOP_CARD_2 || 
+      phase === PHASES.FLOP_CARD_3) {
+    // Already have some flop cards, deal remaining community cards
+    if (simCommunity.length < 5 && simDeck.length >= (5 - simCommunity.length)) {
+      while (simCommunity.length < 5) {
+        simCommunity.push(simDeck.pop()!);
+      }
     }
   }
 
-  if (simCommunity.length < 5 && simDeck.length >= (5 - simCommunity.length)) {
-    while (simCommunity.length < 5) {
-      simCommunity.push(simDeck.pop()!);
+  // For turn/river phases, deal remaining cards
+  if (phase === PHASES.TURN || phase === PHASES.RIVER) {
+    // Already have some community cards, deal remaining
+    if (simCommunity.length < 5 && simDeck.length >= (5 - simCommunity.length)) {
+      while (simCommunity.length < 5) {
+        simCommunity.push(simDeck.pop()!);
+      }
     }
+  }
+
+  // For dealer card phases, all community cards are already dealt
+  if (phase === PHASES.DEALER_CARD_1 || phase === PHASES.DEALER_CARD_2) {
+    // Community cards are already complete, no need to deal more
   }
 
   // Simulate player decisions

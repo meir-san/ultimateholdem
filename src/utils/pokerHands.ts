@@ -43,7 +43,6 @@ function evaluateFiveCards(cards: Card[]): EvaluatedHand {
     rankCounts.set(rank, (rankCounts.get(rank) || 0) + 1);
   }
 
-  const counts = Array.from(rankCounts.values()).sort((a, b) => b - a);
   const pairs = Array.from(rankCounts.entries())
     .filter(([_, count]) => count === 2)
     .map(([rank]) => rank)
@@ -72,7 +71,7 @@ function evaluateFiveCards(cards: Card[]): EvaluatedHand {
     return {
       rank: HandRank.FOUR_OF_KIND,
       cards: sorted,
-      kickers: [kicker],
+      kickers: [quadRank, kicker], // Compare quad rank first, then kicker
     };
   }
 
@@ -98,11 +97,11 @@ function evaluateFiveCards(cards: Card[]): EvaluatedHand {
   // Three of a kind
   if (trips.length > 0) {
     const tripRank = trips[0];
-    const kickers = ranks.filter(r => r !== tripRank).slice(0, 2);
+    const kickers = ranks.filter(r => r !== tripRank).slice(0, 2).sort((a, b) => b - a);
     return {
       rank: HandRank.THREE_OF_KIND,
       cards: sorted,
-      kickers,
+      kickers: [tripRank, ...kickers], // Compare trip rank first, then kickers
     };
   }
 
@@ -119,11 +118,11 @@ function evaluateFiveCards(cards: Card[]): EvaluatedHand {
   // Pair
   if (pairs.length === 1) {
     const pairRank = pairs[0];
-    const kickers = ranks.filter(r => r !== pairRank).slice(0, 3);
+    const kickers = ranks.filter(r => r !== pairRank).slice(0, 3).sort((a, b) => b - a);
     return {
       rank: HandRank.PAIR,
       cards: sorted,
-      kickers,
+      kickers: [pairRank, ...kickers], // Compare pair rank first, then kickers
     };
   }
 

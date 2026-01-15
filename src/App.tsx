@@ -1,9 +1,13 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useGameStore } from './stores/gameStore';
-import { GameBoard } from './components/GameBoard';
+import { PlayerDealerCards } from './components/PlayerDealerCards';
+import { PhaseTimer } from './components/PhaseTimer';
 import { PriceChart } from './components/PriceChart';
 import { BettingRow } from './components/BettingRow';
-import { ActivityFeed } from './components/ActivityFeed';
+import { ResultBanner } from './components/ResultBanner';
+import { BetsLockedOverlay } from './components/BetsLockedOverlay';
+import { LiveChat } from './components/LiveChat';
+import { RoundHistory } from './components/RoundHistory';
 import { PHASES, QUICK_BET_AMOUNTS, MAX_BET_AMOUNT, CROWD_BET_DELAY_MIN, CROWD_BET_DELAY_MAX, PREDICTION_WINDOW } from './config/constants';
 
 function App() {
@@ -14,20 +18,17 @@ function App() {
     playerCards,
     dealerCards,
     communityCards,
-    playerRaisedPreflop,
-    playerRaisedPostflop,
-    playerRaisedTurnRiver,
-    playerFolded,
     trueOdds,
     roundResult,
     roundNumber,
     roundProfit,
     balance,
     selectedBetAmount,
+    lifetimeVolume,
     pool,
     activityFeed,
     priceHistory,
-    myPositions,
+    roundHistory,
     
     // Actions
     startNewRound,
@@ -145,26 +146,64 @@ function App() {
     switch (phase) {
       case PHASES.PRE_DEAL:
         return 'PRE-DEAL';
-      case PHASES.HOLE_CARDS:
-        return 'HOLE CARDS';
-      case PHASES.PREFLOP_DECISION:
-        return playerRaisedPreflop ? 'RAISED 4x PRE-FLOP' : 'CHECKED PRE-FLOP';
-      case PHASES.FLOP:
-        return 'FLOP';
-      case PHASES.POSTFLOP_DECISION:
-        return playerRaisedPostflop ? 'RAISED 2x POST-FLOP' : 'CHECKED POST-FLOP';
-      case PHASES.TURN_RIVER:
-        return 'TURN & RIVER';
-      case PHASES.FINAL_DECISION:
-        return playerRaisedTurnRiver ? 'RAISED 1x' : 'FOLDED';
-      case PHASES.SHOWDOWN:
-        return 'SHOWDOWN';
+      case PHASES.PLAYER_CARD_1:
+        return 'PLAYER CARD 1';
+      case PHASES.PLAYER_CARD_2:
+        return 'PLAYER CARD 2';
+      case PHASES.FLOP_CARD_1:
+        return 'FLOP CARD 1';
+      case PHASES.FLOP_CARD_2:
+        return 'FLOP CARD 2';
+      case PHASES.FLOP_CARD_3:
+        return 'FLOP CARD 3';
+      case PHASES.TURN:
+        return 'TURN';
+      case PHASES.RIVER:
+        return 'RIVER';
+      case PHASES.DEALER_CARD_1:
+        return 'DEALER CARD 1';
+      case PHASES.DEALER_CARD_2:
+        return 'DEALER CARD 2';
       case PHASES.RESOLUTION:
-        return 'RESOLUTION';
+        return 'SETTLEMENT';
       default:
         return '';
     }
-  }, [phase, playerRaisedPreflop, playerRaisedPostflop, playerRaisedTurnRiver]);
+  }, [phase]);
+
+  const getNextAction = useCallback((): string => {
+    if (phase === PHASES.PRE_DEAL) {
+      return 'First player card will be dealt';
+    }
+    if (phase === PHASES.PLAYER_CARD_1) {
+      return 'Second player card will be dealt';
+    }
+    if (phase === PHASES.PLAYER_CARD_2) {
+      return 'First flop card will be dealt';
+    }
+    if (phase === PHASES.FLOP_CARD_1) {
+      return 'Second flop card will be dealt';
+    }
+    if (phase === PHASES.FLOP_CARD_2) {
+      return 'Third flop card will be dealt';
+    }
+    if (phase === PHASES.FLOP_CARD_3) {
+      return 'Turn card will be dealt';
+    }
+    if (phase === PHASES.TURN) {
+      return 'River card will be dealt';
+    }
+    if (phase === PHASES.RIVER) {
+      return 'First dealer card will be dealt';
+    }
+    if (phase === PHASES.DEALER_CARD_1) {
+      return 'Second dealer card will be dealt';
+    }
+    if (phase === PHASES.DEALER_CARD_2) {
+      return 'Showdown';
+    }
+    return '';
+  }, [phase]);
 
   const marketLocked = isMarketLocked();
   const totalPool = pool.player + pool.dealer + pool.push;
@@ -183,11 +222,15 @@ function App() {
           <nav className="flex items-center gap-6 text-sm text-slate-400">
             <span className="hover:text-white cursor-pointer">Home</span>
             <span className="hover:text-white cursor-pointer">Explore Markets</span>
+            <span className="hover:text-white cursor-pointer font-bold">Apps ▾</span>
           </nav>
         </div>
         <div className="flex items-center gap-4">
           <button className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-semibold text-sm transition-colors">
             Deposit
+          </button>
+          <button className="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg font-semibold text-sm transition-colors">
+            Create
           </button>
           <div className="flex items-center gap-2 px-4 py-2 bg-slate-800 rounded-lg">
             <span className="text-white font-bold">${balance.toFixed(2)}</span>
@@ -196,33 +239,27 @@ function App() {
         </div>
       </div>
 
+      {/* Round History */}
+      <RoundHistory roundHistory={roundHistory} />
+
       <div className="flex min-h-[calc(100vh-100px)]">
         {/* LEFT SIDE - Game State */}
-        <div className="w-1/2 p-4 border-r border-slate-800 flex flex-col gap-4">
-          <GameBoard
+        <div className="w-1/2 p-4 border-r border-slate-800 flex flex-col">
+          <PlayerDealerCards
+            phase={phase}
             playerCards={playerCards}
             dealerCards={dealerCards}
             communityCards={communityCards}
-            phase={phase}
-            playerRaisedPreflop={playerRaisedPreflop}
-            playerRaisedPostflop={playerRaisedPostflop}
-            playerRaisedTurnRiver={playerRaisedTurnRiver}
-            playerFolded={playerFolded}
+            showDealerCards={phase === PHASES.DEALER_CARD_1 || phase === PHASES.DEALER_CARD_2 || phase === PHASES.RESOLUTION}
           />
 
-          {/* Phase Timer */}
-          <div className="bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-800 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs text-slate-300 uppercase tracking-wide">Phase</div>
-              <div className="text-sm font-semibold text-white">{getPhaseLabel()}</div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="text-xs text-slate-300">Timer</div>
-              <div className={`text-2xl font-black ${timer <= 3 ? 'text-red-400' : 'text-white'}`}>
-                {timer}s
-              </div>
-            </div>
-          </div>
+          <PhaseTimer
+            phase={phase}
+            timer={timer}
+            marketLocked={marketLocked}
+            getPhaseLabel={getPhaseLabel}
+            getNextAction={getNextAction}
+          />
 
           <PriceChart
             priceHistory={priceHistory}
@@ -233,9 +270,9 @@ function App() {
         </div>
 
         {/* RIGHT SIDE - Trading Terminal */}
-        <div className="w-1/2 p-4 flex flex-col gap-4">
+        <div className="w-1/2 p-4 flex flex-col">
           {/* Stats Row */}
-          <div className="flex items-center gap-4 text-sm flex-wrap">
+          <div className="flex items-center gap-4 mb-4 text-sm flex-wrap">
             <div>
               <span className="text-slate-300">Round </span>
               <span className="text-white font-bold">#{roundNumber}</span>
@@ -255,112 +292,186 @@ function App() {
               <span className="text-white font-bold">${totalMyBets}</span>
             </div>
             <div>
-              <span className="text-slate-300">Total Pool </span>
-              <span className="text-yellow-400 font-bold">${totalPool.toLocaleString()}</span>
+              <span className="text-slate-300">Volume </span>
+              <span className="text-yellow-400 font-bold">${lifetimeVolume.toFixed(0)}</span>
             </div>
             <div className="ml-auto flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               <span className="text-emerald-400 font-medium">LIVE</span>
+              <button
+                onClick={() => {}}
+                className="w-5 h-5 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition-colors ml-1"
+                aria-label="Show general rules"
+              >
+                ?
+              </button>
             </div>
           </div>
 
-          {/* Result Banner */}
-          {roundResult && (
-            <div className={`p-4 rounded-lg font-bold text-center ${
-              roundResult === 'player' ? 'bg-emerald-500/20 text-emerald-400' :
-              roundResult === 'dealer' ? 'bg-amber-500/20 text-amber-400' :
-              'bg-slate-500/20 text-slate-300'
-            }`}>
-              {roundResult === 'player' ? 'PLAYER WINS!' :
-               roundResult === 'dealer' ? 'DEALER WINS!' :
-               'PUSH!'}
-              {roundProfit !== null && (
-                <div className="text-sm mt-1">
-                  {roundProfit >= 0 ? '+' : ''}${roundProfit.toFixed(2)}
+          {/* Trading Section */}
+          {phase === PHASES.RESOLUTION ? (
+            <ResultBanner
+              roundResult={roundResult!}
+              pool={pool}
+              totalPool={totalPool}
+              totalMyBets={totalMyBets}
+              roundProfit={roundProfit}
+              myBetTotal={getMyBetTotal(roundResult!)}
+              payout={getPotentialPayout(roundResult!)}
+            />
+          ) : (
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-800 overflow-hidden relative">
+              {/* Bets Locked Overlay */}
+              <BetsLockedOverlay show={betsLocked} />
+              
+              {/* Buy Amount Selector */}
+              <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                <span className="text-xs text-slate-300 uppercase tracking-wide">Buy Amount</span>
+                <div className="flex items-center gap-2">
+                  {QUICK_BET_AMOUNTS.map((amt) => (
+                    <button
+                      key={amt}
+                      onClick={() => setSelectedBetAmount(amt)}
+                      disabled={balance < amt}
+                      className={`
+                        px-4 py-2 rounded-lg text-sm font-semibold transition-all
+                        ${
+                          selectedBetAmount === amt
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                        }
+                        disabled:opacity-30 disabled:cursor-not-allowed
+                      `}
+                    >
+                      ${amt}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => setSelectedBetAmount(Math.min(MAX_BET_AMOUNT, Math.floor(balance)))}
+                    disabled={balance < 1}
+                    className={`
+                      px-4 py-2 rounded-lg text-sm font-semibold transition-all
+                      ${
+                        selectedBetAmount === Math.min(MAX_BET_AMOUNT, Math.floor(balance))
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      }
+                      disabled:opacity-30 disabled:cursor-not-allowed
+                    `}
+                  >
+                    MAX
+                  </button>
                 </div>
-              )}
+              </div>
+
+              {/* Trading Rows */}
+              <BettingRow
+                type="player"
+                label="PLAYER WINS"
+                impliedOdds={getImpliedOdds('player')}
+                pool={pool}
+                canBet={canBet}
+                marketLocked={marketLocked}
+                selectedBetAmount={selectedBetAmount}
+                hasPosition={getMyBetTotal('player') > 0}
+                shares={getTotalShares('player')}
+                amountPaid={getMyBetTotal('player')}
+                winPayout={getPotentialPayout('player')}
+                currentValue={getPositionValue('player')}
+                pnl={getUnrealizedPnL('player')}
+                onPlaceBet={() => placeBet('player')}
+                onSellPosition={() => sellPosition('player')}
+              />
+              <BettingRow
+                type="dealer"
+                label="DEALER WINS"
+                impliedOdds={getImpliedOdds('dealer')}
+                pool={pool}
+                canBet={canBet}
+                marketLocked={marketLocked}
+                selectedBetAmount={selectedBetAmount}
+                hasPosition={getMyBetTotal('dealer') > 0}
+                shares={getTotalShares('dealer')}
+                amountPaid={getMyBetTotal('dealer')}
+                winPayout={getPotentialPayout('dealer')}
+                currentValue={getPositionValue('dealer')}
+                pnl={getUnrealizedPnL('dealer')}
+                onPlaceBet={() => placeBet('dealer')}
+                onSellPosition={() => sellPosition('dealer')}
+              />
+              <BettingRow
+                type="push"
+                label="PUSH"
+                impliedOdds={getImpliedOdds('push')}
+                pool={pool}
+                canBet={canBet}
+                marketLocked={marketLocked}
+                selectedBetAmount={selectedBetAmount}
+                hasPosition={getMyBetTotal('push') > 0}
+                shares={getTotalShares('push')}
+                amountPaid={getMyBetTotal('push')}
+                winPayout={getPotentialPayout('push')}
+                currentValue={getPositionValue('push')}
+                pnl={getUnrealizedPnL('push')}
+                onPlaceBet={() => placeBet('push')}
+                onSellPosition={() => sellPosition('push')}
+              />
             </div>
           )}
 
-          {/* Betting Amount Selector */}
-          <div className="bg-slate-900/80 backdrop-blur rounded-2xl border border-slate-800 p-4">
-            <div className="text-xs text-slate-300 uppercase tracking-wide mb-2">Bet Amount</div>
-            <div className="flex gap-2 flex-wrap">
-              {QUICK_BET_AMOUNTS.map((amount) => (
-                <button
-                  key={amount}
-                  onClick={() => setSelectedBetAmount(amount)}
-                  className={`
-                    px-4 py-2 rounded-lg font-semibold text-sm transition-colors
-                    ${selectedBetAmount === amount
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }
-                  `}
-                >
-                  ${amount}
-                </button>
-              ))}
+          {/* Bottom Section: Live Trades + Live Chat */}
+          <div className="grid grid-cols-2 gap-3 mt-4 flex-1">
+            {/* Live Trades */}
+            <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
+              <div className="text-xs text-slate-300 uppercase tracking-wide mb-3">Live Trades</div>
+              <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                {activityFeed.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`text-xs flex items-center gap-2 ${
+                      item.isYou ? 'text-yellow-400' : item.isSystem ? 'text-blue-400' : 'text-slate-400'
+                    }`}
+                  >
+                    <span className="font-medium truncate w-20">{item.username}</span>
+                    {item.isSystem ? (
+                      <span className="text-blue-400">⚡ Market shift</span>
+                    ) : (
+                      <>
+                        <span className="text-slate-500">→</span>
+                        <span
+                          className={
+                            item.type === 'player'
+                              ? 'text-emerald-400'
+                              : item.type === 'dealer'
+                                ? 'text-amber-400'
+                                : 'text-slate-400'
+                          }
+                        >
+                          {item.typeLabel}
+                        </span>
+                        <span className={item.isSell ? 'text-red-400' : 'text-white'}>${item.amount}</span>
+                      </>
+                    )}
+                  </div>
+                ))}
+                {activityFeed.length === 0 && (
+                  <div className="text-slate-500 text-xs">Waiting for trades...</div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Betting Rows */}
-          <div className="flex-1 space-y-2">
-            <BettingRow
-              type="player"
-              label="Player"
-              impliedOdds={getImpliedOdds('player')}
-              pool={pool}
-              canBet={canBet}
-              marketLocked={marketLocked}
-              selectedBetAmount={selectedBetAmount}
-              hasPosition={myPositions.player.length > 0}
-              shares={getTotalShares('player')}
-              amountPaid={getMyBetTotal('player')}
-              winPayout={getPotentialPayout('player')}
-              currentValue={getPositionValue('player')}
-              pnl={getUnrealizedPnL('player')}
-              onPlaceBet={() => placeBet('player')}
-              onSellPosition={() => sellPosition('player')}
-            />
-            <BettingRow
-              type="dealer"
-              label="Dealer"
-              impliedOdds={getImpliedOdds('dealer')}
-              pool={pool}
-              canBet={canBet}
-              marketLocked={marketLocked}
-              selectedBetAmount={selectedBetAmount}
-              hasPosition={myPositions.dealer.length > 0}
-              shares={getTotalShares('dealer')}
-              amountPaid={getMyBetTotal('dealer')}
-              winPayout={getPotentialPayout('dealer')}
-              currentValue={getPositionValue('dealer')}
-              pnl={getUnrealizedPnL('dealer')}
-              onPlaceBet={() => placeBet('dealer')}
-              onSellPosition={() => sellPosition('dealer')}
-            />
-            <BettingRow
-              type="push"
-              label="Push"
-              impliedOdds={getImpliedOdds('push')}
-              pool={pool}
-              canBet={canBet}
-              marketLocked={marketLocked}
-              selectedBetAmount={selectedBetAmount}
-              hasPosition={myPositions.push.length > 0}
-              shares={getTotalShares('push')}
-              amountPaid={getMyBetTotal('push')}
-              winPayout={getPotentialPayout('push')}
-              currentValue={getPositionValue('push')}
-              pnl={getUnrealizedPnL('push')}
-              onPlaceBet={() => placeBet('push')}
-              onSellPosition={() => sellPosition('push')}
-            />
+            {/* Live Chat */}
+            <LiveChat />
           </div>
+        </div>
+      </div>
 
-          {/* Activity Feed */}
-          <ActivityFeed items={activityFeed} />
+      {/* Developer Credit */}
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-sm border-t border-slate-800 px-4 py-2 z-10">
+        <div className="max-w-7xl mx-auto text-center">
+          <p className="text-xs text-slate-400">
+            This game was designed and developed by <span className="text-slate-300 font-semibold">Bex Games</span> <span className="text-slate-500">2026</span>
+          </p>
         </div>
       </div>
     </div>

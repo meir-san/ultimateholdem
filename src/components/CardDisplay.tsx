@@ -1,5 +1,4 @@
 import type { Card } from '../types';
-import { cardToString } from '../utils/cardUtils';
 
 interface CardDisplayProps {
   card: Card | null;
@@ -9,9 +8,9 @@ interface CardDisplayProps {
 
 export function CardDisplay({ card, hidden = false, size = 'md' }: CardDisplayProps) {
   const sizeClasses = {
-    sm: 'w-12 h-16 text-lg',
-    md: 'w-16 h-24 text-xl',
-    lg: 'w-20 h-28 text-2xl',
+    sm: 'w-12 h-16',
+    md: 'w-16 h-24',
+    lg: 'w-20 h-28',
   };
 
   if (hidden || !card) {
@@ -19,23 +18,15 @@ export function CardDisplay({ card, hidden = false, size = 'md' }: CardDisplayPr
       <div
         className={`
           ${sizeClasses[size]}
-          bg-gradient-to-br from-slate-700 to-slate-900
-          border-2 border-slate-600 rounded-lg
-          flex items-center justify-center
-          shadow-lg
+          rounded-xl flex items-center justify-center transition-all duration-300 relative
+          bg-gradient-to-br from-slate-600 to-slate-700 border-2 border-dashed border-slate-500
+          shadow-lg shadow-black/30
         `}
       >
-        <div className="text-slate-500 text-2xl">🂠</div>
+        <span className="text-slate-300 text-3xl font-bold">?</span>
       </div>
     );
   }
-
-  const suitColors = {
-    hearts: 'text-red-500',
-    diamonds: 'text-red-500',
-    clubs: 'text-slate-800',
-    spades: 'text-slate-800',
-  };
 
   const suitSymbols = {
     hearts: '♥',
@@ -45,26 +36,30 @@ export function CardDisplay({ card, hidden = false, size = 'md' }: CardDisplayPr
   };
 
   const rankMap: Record<number, string> = {
-    2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: 'T',
+    2: '2', 3: '3', 4: '4', 5: '5', 6: '6', 7: '7', 8: '8', 9: '9', 10: '10',
     11: 'J', 12: 'Q', 13: 'K', 14: 'A',
   };
 
   const isRed = card.suit === 'hearts' || card.suit === 'diamonds';
+  const suitColor = isRed ? 'text-red-400' : 'text-white';
 
   return (
     <div
       className={`
         ${sizeClasses[size]}
-        bg-white border-2 ${isRed ? 'border-red-500' : 'border-slate-800'} rounded-lg
-        flex flex-col items-center justify-center
-        shadow-lg font-bold
-        ${suitColors[card.suit]}
+        rounded-xl flex items-center justify-center transition-all duration-300 relative
+        bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-slate-600
+        shadow-lg shadow-black/30
       `}
     >
-      <div className="text-center">
-        <div className="leading-tight">{rankMap[card.rank]}</div>
-        <div className="text-2xl">{suitSymbols[card.suit]}</div>
-      </div>
+      {/* Small suit in top-left corner */}
+      <span className={`absolute top-1 left-1.5 ${suitColor} text-xs font-bold opacity-80`}>
+        {suitSymbols[card.suit]}
+      </span>
+      {/* Large rank in center */}
+      <span className={`text-white text-3xl font-bold tracking-tight tabular-nums ${suitColor}`}>
+        {rankMap[card.rank]}
+      </span>
     </div>
   );
 }

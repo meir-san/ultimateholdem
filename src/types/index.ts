@@ -5,18 +5,20 @@ export interface Card {
   suit: 'hearts' | 'diamonds' | 'clubs' | 'spades';
 }
 
-export enum HandRank {
-  HIGH_CARD = 1,
-  PAIR = 2,
-  TWO_PAIR = 3,
-  THREE_OF_KIND = 4,
-  STRAIGHT = 5,
-  FLUSH = 6,
-  FULL_HOUSE = 7,
-  FOUR_OF_KIND = 8,
-  STRAIGHT_FLUSH = 9,
-  ROYAL_FLUSH = 10,
-}
+export const HandRank = {
+  HIGH_CARD: 1,
+  PAIR: 2,
+  TWO_PAIR: 3,
+  THREE_OF_KIND: 4,
+  STRAIGHT: 5,
+  FLUSH: 6,
+  FULL_HOUSE: 7,
+  FOUR_OF_KIND: 8,
+  STRAIGHT_FLUSH: 9,
+  ROYAL_FLUSH: 10,
+} as const;
+
+export type HandRank = typeof HandRank[keyof typeof HandRank];
 
 export interface EvaluatedHand {
   rank: HandRank;
@@ -66,6 +68,11 @@ export interface PriceHistoryPoint {
   push: number;
 }
 
+export interface RoundHistoryItem {
+  winner: 'player' | 'dealer' | 'push';
+  handDescription: string; // e.g., "Pair of K", "4 of a kind A", "High Card 8"
+}
+
 export interface GameState {
   // Deck and cards
   deck: Card[];
@@ -96,6 +103,7 @@ export interface GameState {
   balance: number;
   myPositions: Positions;
   selectedBetAmount: number;
+  lifetimeVolume: number; // Cumulative total of all bets placed (never resets)
   
   // Market state
   pool: Pool;
@@ -103,6 +111,9 @@ export interface GameState {
   activityFeed: ActivityFeedItem[];
   priceHistory: PriceHistoryPoint[];
   showReferences: boolean;
+  
+  // Round history
+  roundHistory: RoundHistoryItem[];
 }
 
 export type Outcome = 'player' | 'dealer' | 'push';

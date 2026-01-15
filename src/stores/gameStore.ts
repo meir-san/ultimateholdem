@@ -3,9 +3,10 @@ import type { GameState, Outcome, ActivityFeedItem, PriceHistoryPoint, Position 
 import { PHASES, INITIAL_BALANCE, INITIAL_POOL_BASE, INITIAL_ODDS, PREDICTION_WINDOW, PLATFORM_FEE } from '../config/constants';
 import { createDeck } from '../utils/cardUtils';
 import { calculateWinProbabilities } from '../utils/winProbability';
-import { shouldRaise4x, shouldRaise2x, shouldRaise1x } from '../utils/uthStrategy';
 import { evaluateHand, determineWinner } from '../utils/pokerHands';
 import { calculateShares, getTotalAmountPaid, getTotalShares, getPotentialPayout } from '../utils/marketPricing';
+import { getShortHandDescription } from '../utils/handDescription';
+import type { RoundHistoryItem } from '../types';
 
 interface GameStore extends GameState {
   // Actions
@@ -61,11 +62,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   balance: INITIAL_BALANCE,
   myPositions: { player: [], dealer: [], push: [] },
   selectedBetAmount: 10,
+  lifetimeVolume: 0,
   pool: { player: 0, dealer: 0, push: 0 },
   crowdBets: { player: 0, dealer: 0, push: 0 },
   activityFeed: [],
   priceHistory: [],
   showReferences: true,
+  roundHistory: [],
 
   startNewRound: () => {
     const newDeck = createDeck();
@@ -96,6 +99,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       priceHistory: [],
       pool: initialPool,
       crowdBets: initialPool,
+      // Don't reset roundHistory - keep accumulating
     });
   },
 
@@ -104,173 +108,297 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { phase, deck, playerCards, dealerCards, communityCards } = state;
 
     if (phase === PHASES.PRE_DEAL) {
-      // Deal hole cards
+      // Deal first player card
       const newDeck = [...deck];
       const pCard1 = newDeck.pop()!;
-      const dCard1 = newDeck.pop()!;
-      const pCard2 = newDeck.pop()!;
-      const dCard2 = newDeck.pop()!;
+      
+      const newOdds = calculateWinProbabilities(
+        [pCard1],
+        [],
+        [],
+        newDeck,
+        PHASES.PLAYER_CARD_1
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
       
       set({
         deck: newDeck,
-        playerCards: [pCard1, pCard2],
-        dealerCards: [dCard1, dCard2],
-        phase: PHASES.HOLE_CARDS,
-        timer: PREDICTION_WINDOW,
-      });
-      
-      const newOdds = calculateWinProbabilities(
-        [pCard1, pCard2],
-        [dCard1, dCard2],
-        [],
-        newDeck,
-        PHASES.HOLE_CARDS
-      );
-      set({
+        playerCards: [pCard1],
+        phase: PHASES.PLAYER_CARD_1,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
         trueOdds: newOdds,
         history: [...state.history, newOdds],
       });
       
-    } else if (phase === PHASES.HOLE_CARDS) {
-      // Pre-flop decision
-      const shouldRaise = shouldRaise4x(playerCards);
+      // If certain, auto-advance after a short delay to show the card
+      if (isCertain) {
+        setTimeout(() => {
+          get().advancePhase();
+        }, 100);
+      }
+      
+    } else if (phase === PHASES.PLAYER_CARD_1) {
+      // Deal second player card
+      const newDeck = [...deck];
+      const pCard2 = newDeck.pop()!;
+      
+      const newOdds = calculateWinProbabilities(
+        [...playerCards, pCard2],
+        [],
+        [],
+        newDeck,
+        PHASES.PLAYER_CARD_2
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
       
       set({
-        playerRaisedPreflop: shouldRaise,
-        phase: PHASES.PREFLOP_DECISION,
-        timer: PREDICTION_WINDOW,
+        deck: newDeck,
+        playerCards: [...playerCards, pCard2],
+        phase: PHASES.PLAYER_CARD_2,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
+        trueOdds: newOdds,
+        history: [...state.history, newOdds],
       });
       
-      // Auto-advance after decision
-      setTimeout(() => {
-        get().advancePhase();
-      }, 1000);
+      // If certain, auto-advance after a short delay to show the card
+      if (isCertain) {
+        setTimeout(() => {
+          get().advancePhase();
+        }, 100);
+      }
       
-    } else if (phase === PHASES.PREFLOP_DECISION) {
-      // Deal flop
+    } else if (phase === PHASES.PLAYER_CARD_2) {
+      // Deal first flop card
       const newDeck = [...deck];
-      const flop = [newDeck.pop()!, newDeck.pop()!, newDeck.pop()!];
+      const flopCard1 = newDeck.pop()!;
+      
+      const newOdds = calculateWinProbabilities(
+        playerCards,
+        [],
+        [flopCard1],
+        newDeck,
+        PHASES.FLOP_CARD_1
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      
+      set({
+        deck: newDeck,
+        communityCards: [flopCard1],
+        phase: PHASES.FLOP_CARD_1,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
+        trueOdds: newOdds,
+        history: [...state.history, newOdds],
+      });
+      
+      // If certain, auto-advance after a short delay to show the card
+      if (isCertain) {
+        setTimeout(() => {
+          get().advancePhase();
+        }, 100);
+      }
+      
+    } else if (phase === PHASES.FLOP_CARD_1) {
+      // Deal second flop card
+      const newDeck = [...deck];
+      const flopCard2 = newDeck.pop()!;
+      
+      const newOdds = calculateWinProbabilities(
+        playerCards,
+        [],
+        [...communityCards, flopCard2],
+        newDeck,
+        PHASES.FLOP_CARD_2
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      
+      set({
+        deck: newDeck,
+        communityCards: [...communityCards, flopCard2],
+        phase: PHASES.FLOP_CARD_2,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
+        trueOdds: newOdds,
+        history: [...state.history, newOdds],
+      });
+      
+      // If certain, auto-advance after a short delay to show the card
+      if (isCertain) {
+        setTimeout(() => {
+          get().advancePhase();
+        }, 100);
+      }
+      
+    } else if (phase === PHASES.FLOP_CARD_2) {
+      // Deal third flop card
+      const newDeck = [...deck];
+      const flopCard3 = newDeck.pop()!;
+      const flop = [...communityCards, flopCard3];
+      
+      const newOdds = calculateWinProbabilities(
+        playerCards,
+        [],
+        flop,
+        newDeck,
+        PHASES.FLOP_CARD_3
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
       
       set({
         deck: newDeck,
         communityCards: flop,
-        phase: PHASES.FLOP,
-        timer: PREDICTION_WINDOW,
-      });
-      
-      const newOdds = calculateWinProbabilities(
-        playerCards,
-        dealerCards,
-        flop,
-        newDeck,
-        PHASES.FLOP
-      );
-      set({
+        phase: PHASES.FLOP_CARD_3,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
         trueOdds: newOdds,
         history: [...state.history, newOdds],
       });
       
-    } else if (phase === PHASES.FLOP) {
-      // Post-flop decision (if didn't raise pre-flop)
-      if (!state.playerRaisedPreflop) {
-        const shouldRaise = shouldRaise2x(playerCards, communityCards);
-        
-        set({
-          playerRaisedPostflop: shouldRaise,
-          phase: PHASES.POSTFLOP_DECISION,
-          timer: PREDICTION_WINDOW,
-        });
-        
+      // If certain, auto-advance after a short delay to show the card
+      if (isCertain) {
         setTimeout(() => {
           get().advancePhase();
-        }, 1000);
-      } else {
-        // Already raised pre-flop, skip to turn/river
-        get().advancePhase();
+        }, 100);
       }
       
-    } else if (phase === PHASES.POSTFLOP_DECISION) {
-      // Deal turn and river
+    } else if (phase === PHASES.FLOP_CARD_3) {
+      // Deal turn card
       const newDeck = [...deck];
       const turn = newDeck.pop()!;
+      
+      const newOdds = calculateWinProbabilities(
+        playerCards,
+        [],
+        [...communityCards, turn],
+        newDeck,
+        PHASES.TURN
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      
+      set({
+        deck: newDeck,
+        communityCards: [...communityCards, turn],
+        phase: PHASES.TURN,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
+        trueOdds: newOdds,
+        history: [...state.history, newOdds],
+      });
+      
+      // If certain, auto-advance after a short delay to show the card
+      if (isCertain) {
+        setTimeout(() => {
+          get().advancePhase();
+        }, 100);
+      }
+      
+    } else if (phase === PHASES.TURN) {
+      // Deal river card
+      const newDeck = [...deck];
       const river = newDeck.pop()!;
-      const newCommunity = [...communityCards, turn, river];
+      const newCommunity = [...communityCards, river];
+      
+      const newOdds = calculateWinProbabilities(
+        playerCards,
+        [],
+        newCommunity,
+        newDeck,
+        PHASES.RIVER
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
       
       set({
         deck: newDeck,
         communityCards: newCommunity,
-        phase: PHASES.TURN_RIVER,
-        timer: PREDICTION_WINDOW,
-      });
-      
-      const newOdds = calculateWinProbabilities(
-        playerCards,
-        dealerCards,
-        newCommunity,
-        newDeck,
-        PHASES.TURN_RIVER
-      );
-      set({
+        phase: PHASES.RIVER,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
         trueOdds: newOdds,
         history: [...state.history, newOdds],
       });
       
-    } else if (phase === PHASES.TURN_RIVER) {
-      // Final decision (if checked twice)
-      if (!state.playerRaisedPreflop && !state.playerRaisedPostflop) {
-        const shouldRaise = shouldRaise1x(playerCards, communityCards);
-        
-        if (!shouldRaise) {
-          set({
-            playerFolded: true,
-            roundResult: 'dealer',
-            phase: PHASES.RESOLUTION,
-          });
-          get().resolveRound('dealer');
-        } else {
-          set({
-            playerRaisedTurnRiver: true,
-            phase: PHASES.FINAL_DECISION,
-            timer: PREDICTION_WINDOW,
-          });
-          
-          setTimeout(() => {
-            get().advancePhase();
-          }, 1000);
-        }
-      } else {
-        // Already raised, go to showdown
-        get().advancePhase();
+      // If certain, auto-advance after a short delay to show the card
+      if (isCertain) {
+        setTimeout(() => {
+          get().advancePhase();
+        }, 100);
       }
       
-    } else if (phase === PHASES.FINAL_DECISION) {
-      // Showdown
+    } else if (phase === PHASES.RIVER) {
+      // Deal first dealer card
+      const newDeck = [...deck];
+      const dCard1 = newDeck.pop()!;
+      
+      const newOdds = calculateWinProbabilities(
+        playerCards,
+        [dCard1],
+        communityCards,
+        newDeck,
+        PHASES.DEALER_CARD_1
+      );
+      
+      // Check if outcome is certain (100%)
+      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      
       set({
-        phase: PHASES.SHOWDOWN,
-        timer: PREDICTION_WINDOW,
+        deck: newDeck,
+        dealerCards: [dCard1],
+        phase: PHASES.DEALER_CARD_1,
+        timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if outcome is certain
+        trueOdds: newOdds,
+        history: [...state.history, newOdds],
       });
       
-      setTimeout(() => {
-        get().advancePhase();
-      }, 2000);
+      // If outcome is certain, immediately deal second card and resolve
+      if (isCertain) {
+        setTimeout(() => {
+          get().advancePhase();
+        }, 100); // Small delay to show the card
+      }
       
-    } else if (phase === PHASES.SHOWDOWN) {
-      // Evaluate hands
+    } else if (phase === PHASES.DEALER_CARD_1) {
+      // Deal second dealer card - always resolve immediately (no prediction window)
+      const newDeck = [...deck];
+      const dCard2 = newDeck.pop()!;
+      
+      set({
+        deck: newDeck,
+        dealerCards: [...dealerCards, dCard2],
+        phase: PHASES.DEALER_CARD_2,
+        timer: 0, // No prediction window - resolve immediately
+      });
+      
+      // All cards dealt, evaluate hands and resolve immediately
       const playerHand = evaluateHand([...playerCards, ...communityCards]);
-      const dealerHand = evaluateHand([...dealerCards, ...communityCards]);
+      const dealerHand = evaluateHand([...dealerCards, dCard2, ...communityCards]);
       
       // Check dealer qualification (needs pair or better)
       if (dealerHand.rank < 2) {
         // Dealer doesn't qualify - player wins
+        const handDescription = getShortHandDescription(playerCards, communityCards);
         set({
           roundResult: 'player',
           trueOdds: { player: 100, dealer: 0, push: 0 },
           history: [...state.history, { player: 100, dealer: 0, push: 0 }],
           phase: PHASES.RESOLUTION,
+          roundHistory: [...state.roundHistory, { winner: 'player', handDescription }],
         });
         get().resolveRound('player');
       } else {
         const result = determineWinner(playerHand, dealerHand);
+        const winningHand = result === 'player' ? playerHand : dealerHand;
+        const winningCards = result === 'player' ? playerCards : [...dealerCards, dCard2];
+        const handDescription = getShortHandDescription(winningCards, communityCards);
+        
         set({
           roundResult: result,
           trueOdds: {
@@ -284,6 +412,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
             push: result === 'push' ? 100 : 0,
           }],
           phase: PHASES.RESOLUTION,
+          roundHistory: [...state.roundHistory, { winner: result, handDescription }],
         });
         get().resolveRound(result);
       }
@@ -308,6 +437,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     
     set({
       balance: state.balance - amount,
+      lifetimeVolume: state.lifetimeVolume + amount,
       myPositions: {
         ...state.myPositions,
         [type]: [...state.myPositions[type], newPosition],
@@ -495,6 +625,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       roundProfit: profit,
       balance: state.balance + payout,
+      // roundHistory is already updated in advancePhase when resolving
     });
   },
 
@@ -526,14 +657,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
   getImpliedOdds: (type) => {
     const state = get();
-    const totalPool = state.pool.player + state.pool.dealer + state.pool.push;
-    if (totalPool === 0) return 33.33;
-    return (state.pool[type] / totalPool) * 100;
+    // Prices should be based on true odds, not pool distribution
+    // Pool distribution affects payouts, but displayed price reflects true probability
+    return state.trueOdds[type];
   },
   isMarketLocked: () => {
     const state = get();
     if (state.phase === PHASES.RESOLUTION) return true;
     if (state.playerFolded) return true;
+    // Lock betting if any outcome is certain (100% probability)
+    if (state.trueOdds.player >= 100 || state.trueOdds.dealer >= 100 || state.trueOdds.push >= 100) {
+      return true;
+    }
     return false;
   },
 }));

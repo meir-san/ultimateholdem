@@ -405,12 +405,26 @@ export function PlayerDealerCards({
 
       {/* Community Cards - Always show 5 slots (3 flop, 1 turn, 1 river) */}
       <div className="col-span-2 bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
-        <div className="text-xs text-slate-300 uppercase tracking-wide mb-2 text-center">Flop</div>
-        <div className="flex gap-2 justify-center">
-          {/* Always show 5 slots: 3 for flop, 1 for turn, 1 for river */}
-          {[0, 1, 2, 3, 4].map((i) => (
-            <CardDisplay key={i} card={communityCards[i] || null} hidden={!communityCards[i]} />
-          ))}
+        <div className="flex gap-2 justify-center items-end">
+          {/* Flop - first 3 cards with single label centered above */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-xs text-slate-300 uppercase tracking-wide mb-1">Flop</div>
+            <div className="flex gap-2">
+              {[0, 1, 2].map((i) => (
+                <CardDisplay key={i} card={communityCards[i] || null} hidden={!communityCards[i]} />
+              ))}
+            </div>
+          </div>
+          {/* Turn - 4th card */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-xs text-slate-300 uppercase tracking-wide">Turn</div>
+            <CardDisplay card={communityCards[3] || null} hidden={!communityCards[3]} />
+          </div>
+          {/* River - 5th card */}
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-xs text-slate-300 uppercase tracking-wide">River</div>
+            <CardDisplay card={communityCards[4] || null} hidden={!communityCards[4]} />
+          </div>
         </div>
       </div>
     </div>

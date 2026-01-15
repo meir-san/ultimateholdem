@@ -4,28 +4,18 @@
 
 export const PHASES = {
   PRE_DEAL: 'PRE_DEAL',
-  PLAYER_CARD_1: 'PLAYER_CARD_1',
-  DEALER_CARD_1: 'DEALER_CARD_1',
-  PLAYER_CARD_2: 'PLAYER_CARD_2',
-  DEALER_CARD_2: 'DEALER_CARD_2',
-  HOLE_CARDS: 'HOLE_CARDS',
-  PREFLOP_DECISION: 'PREFLOP_DECISION',
-  FLOP_CARD_1: 'FLOP_CARD_1',
-  FLOP_CARD_2: 'FLOP_CARD_2',
-  FLOP_CARD_3: 'FLOP_CARD_3',
+  PLAYER_CARDS: 'PLAYER_CARDS',
   FLOP: 'FLOP',
-  POSTFLOP_DECISION: 'POSTFLOP_DECISION',
   TURN: 'TURN',
   RIVER: 'RIVER',
-  TURN_RIVER: 'TURN_RIVER',
-  FINAL_DECISION: 'FINAL_DECISION',
-  SHOWDOWN: 'SHOWDOWN',
+  DEALER_CARDS: 'DEALER_CARDS',
   RESOLUTION: 'RESOLUTION',
 } as const;
 
 export type Phase = typeof PHASES[keyof typeof PHASES];
 
 export const PREDICTION_WINDOW = 15; // seconds
+export const CARD_DEAL_DELAY = 1500; // milliseconds between cards in the same phase (1.5 seconds)
 export const PLATFORM_FEE = 0.035; // 3.5% rake
 export const INITIAL_BALANCE = 100;
 export const INITIAL_POOL_BASE = 1000;

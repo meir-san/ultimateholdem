@@ -146,24 +146,16 @@ function App() {
     switch (phase) {
       case PHASES.PRE_DEAL:
         return 'PRE-DEAL';
-      case PHASES.PLAYER_CARD_1:
-        return 'PLAYER CARD 1';
-      case PHASES.PLAYER_CARD_2:
-        return 'PLAYER CARD 2';
-      case PHASES.FLOP_CARD_1:
-        return 'FLOP CARD 1';
-      case PHASES.FLOP_CARD_2:
-        return 'FLOP CARD 2';
-      case PHASES.FLOP_CARD_3:
-        return 'FLOP CARD 3';
+      case PHASES.PLAYER_CARDS:
+        return 'PLAYER CARDS';
+      case PHASES.FLOP:
+        return 'FLOP';
       case PHASES.TURN:
         return 'TURN';
       case PHASES.RIVER:
         return 'RIVER';
-      case PHASES.DEALER_CARD_1:
-        return 'DEALER CARD 1';
-      case PHASES.DEALER_CARD_2:
-        return 'DEALER CARD 2';
+      case PHASES.DEALER_CARDS:
+        return 'DEALER CARDS';
       case PHASES.RESOLUTION:
         return 'SETTLEMENT';
       default:
@@ -173,33 +165,21 @@ function App() {
 
   const getNextAction = useCallback((): string => {
     if (phase === PHASES.PRE_DEAL) {
-      return 'First player card will be dealt';
+      return 'Player cards will be dealt';
     }
-    if (phase === PHASES.PLAYER_CARD_1) {
-      return 'Second player card will be dealt';
+    if (phase === PHASES.PLAYER_CARDS) {
+      return 'Flop will be dealt';
     }
-    if (phase === PHASES.PLAYER_CARD_2) {
-      return 'First flop card will be dealt';
-    }
-    if (phase === PHASES.FLOP_CARD_1) {
-      return 'Second flop card will be dealt';
-    }
-    if (phase === PHASES.FLOP_CARD_2) {
-      return 'Third flop card will be dealt';
-    }
-    if (phase === PHASES.FLOP_CARD_3) {
+    if (phase === PHASES.FLOP) {
       return 'Turn card will be dealt';
     }
     if (phase === PHASES.TURN) {
       return 'River card will be dealt';
     }
     if (phase === PHASES.RIVER) {
-      return 'First dealer card will be dealt';
+      return 'Dealer cards will be dealt';
     }
-    if (phase === PHASES.DEALER_CARD_1) {
-      return 'Second dealer card will be dealt';
-    }
-    if (phase === PHASES.DEALER_CARD_2) {
+    if (phase === PHASES.DEALER_CARDS) {
       return 'Showdown';
     }
     return '';
@@ -250,7 +230,7 @@ function App() {
             playerCards={playerCards}
             dealerCards={dealerCards}
             communityCards={communityCards}
-            showDealerCards={phase === PHASES.DEALER_CARD_1 || phase === PHASES.DEALER_CARD_2 || phase === PHASES.RESOLUTION}
+            showDealerCards={phase === PHASES.DEALER_CARDS || phase === PHASES.RESOLUTION}
           />
 
           <PhaseTimer

@@ -294,9 +294,9 @@ export function PlayerDealerCards({
   showDealerCards,
 }: PlayerDealerCardsProps) {
   const isPreDeal = phase === PHASES.PRE_DEAL;
-  const isPlayerCards = phase === PHASES.PLAYER_CARD_1 || phase === PHASES.PLAYER_CARD_2;
-  const isCommunityCards = phase === PHASES.FLOP_CARD_1 || phase === PHASES.FLOP_CARD_2 || phase === PHASES.FLOP_CARD_3 || phase === PHASES.TURN || phase === PHASES.RIVER;
-  const isDealerCards = phase === PHASES.DEALER_CARD_1 || phase === PHASES.DEALER_CARD_2;
+  const isPlayerCards = phase === PHASES.PLAYER_CARDS;
+  const isCommunityCards = phase === PHASES.FLOP || phase === PHASES.TURN || phase === PHASES.RIVER;
+  const isDealerCards = phase === PHASES.DEALER_CARDS;
   const isResolution = phase === PHASES.RESOLUTION;
 
   const getPlayerStatus = () => {

@@ -7,9 +7,6 @@ interface GameBoardProps {
   dealerCards: Card[];
   communityCards: Card[];
   phase: string;
-  playerRaisedPreflop: boolean;
-  playerRaisedPostflop: boolean;
-  playerRaisedTurnRiver: boolean;
   playerFolded: boolean;
 }
 
@@ -18,32 +15,25 @@ export function GameBoard({
   dealerCards,
   communityCards,
   phase,
-  playerRaisedPreflop,
-  playerRaisedPostflop,
-  playerRaisedTurnRiver,
   playerFolded,
 }: GameBoardProps) {
-  const showDealerCards = phase === PHASES.SHOWDOWN || phase === PHASES.RESOLUTION;
+  const showDealerCards = phase === PHASES.DEALER_CARDS || phase === PHASES.RESOLUTION;
   const showCommunity = communityCards.length > 0;
 
   const getPhaseLabel = () => {
     switch (phase) {
       case PHASES.PRE_DEAL:
         return 'Pre-Deal';
-      case PHASES.HOLE_CARDS:
-        return 'Hole Cards';
-      case PHASES.PREFLOP_DECISION:
-        return playerRaisedPreflop ? 'Raised 4x Pre-Flop' : 'Checked Pre-Flop';
+      case PHASES.PLAYER_CARDS:
+        return 'Player Cards';
       case PHASES.FLOP:
         return 'Flop';
-      case PHASES.POSTFLOP_DECISION:
-        return playerRaisedPostflop ? 'Raised 2x Post-Flop' : 'Checked Post-Flop';
-      case PHASES.TURN_RIVER:
-        return 'Turn & River';
-      case PHASES.FINAL_DECISION:
-        return playerRaisedTurnRiver ? 'Raised 1x' : 'Folded';
-      case PHASES.SHOWDOWN:
-        return 'Showdown';
+      case PHASES.TURN:
+        return 'Turn';
+      case PHASES.RIVER:
+        return 'River';
+      case PHASES.DEALER_CARDS:
+        return 'Dealer Cards';
       case PHASES.RESOLUTION:
         return 'Resolution';
       default:

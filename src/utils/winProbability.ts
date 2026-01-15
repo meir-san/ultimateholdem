@@ -158,9 +158,7 @@ function simulateGame(
 
   // Deal community cards based on phase
   // For phases before community cards, deal all community cards
-  if (phase === PHASES.PRE_DEAL || 
-      phase === PHASES.PLAYER_CARD_1 || 
-      phase === PHASES.PLAYER_CARD_2) {
+  if (phase === PHASES.PRE_DEAL || phase === PHASES.PLAYER_CARDS) {
     // Deal all community cards (flop, turn, river)
     if (simCommunity.length < 5 && simDeck.length >= (5 - simCommunity.length)) {
       while (simCommunity.length < 5) {
@@ -169,11 +167,9 @@ function simulateGame(
     }
   }
 
-  // For flop card phases, deal remaining community cards
-  if (phase === PHASES.FLOP_CARD_1 || 
-      phase === PHASES.FLOP_CARD_2 || 
-      phase === PHASES.FLOP_CARD_3) {
-    // Already have some flop cards, deal remaining community cards
+  // For flop phase, deal remaining community cards (turn, river)
+  if (phase === PHASES.FLOP) {
+    // Already have flop cards, deal remaining community cards
     if (simCommunity.length < 5 && simDeck.length >= (5 - simCommunity.length)) {
       while (simCommunity.length < 5) {
         simCommunity.push(simDeck.pop()!);
@@ -181,9 +177,9 @@ function simulateGame(
     }
   }
 
-  // For turn/river phases, deal remaining cards
-  if (phase === PHASES.TURN || phase === PHASES.RIVER) {
-    // Already have some community cards, deal remaining
+  // For turn phase, deal remaining card (river)
+  if (phase === PHASES.TURN) {
+    // Already have flop and turn, deal river
     if (simCommunity.length < 5 && simDeck.length >= (5 - simCommunity.length)) {
       while (simCommunity.length < 5) {
         simCommunity.push(simDeck.pop()!);
@@ -191,8 +187,8 @@ function simulateGame(
     }
   }
 
-  // For dealer card phases, all community cards are already dealt
-  if (phase === PHASES.DEALER_CARD_1 || phase === PHASES.DEALER_CARD_2) {
+  // For river and dealer card phases, all community cards are already dealt
+  if (phase === PHASES.RIVER || phase === PHASES.DEALER_CARDS) {
     // Community cards are already complete, no need to deal more
   }
 

@@ -275,6 +275,10 @@ function App() {
               <span className="text-slate-300">Volume </span>
               <span className="text-yellow-400 font-bold">${lifetimeVolume.toFixed(0)}</span>
             </div>
+            <div>
+              <span className="text-slate-300">Fees </span>
+              <span className="text-rose-400 font-bold">${(lifetimeVolume * 0.035).toFixed(2)}</span>
+            </div>
             <div className="ml-auto flex items-center gap-2">
               <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
               <span className="text-emerald-400 font-medium">LIVE</span>

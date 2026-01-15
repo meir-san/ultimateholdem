@@ -86,10 +86,6 @@ export function BettingRow({
             <span className="text-sm text-white font-medium">${pool[type].toLocaleString()}</span>
             <span className="text-xs text-slate-300">vol</span>
           </div>
-          <div className="px-3 py-1.5 rounded-full bg-rose-500/20 flex items-center gap-1.5">
-            <span className="text-sm text-rose-300 font-medium">${(pool[type] * 0.035).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-            <span className="text-xs text-slate-300">fees</span>
-          </div>
         </div>
 
         {/* Buy Button */}

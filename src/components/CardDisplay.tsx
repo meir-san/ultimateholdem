@@ -13,7 +13,7 @@ export function CardDisplay({ card, hidden = false, size = 'md' }: CardDisplayPr
     lg: 'w-20 h-28',
   };
 
-  if (hidden || !card) {
+  if (hidden) {
     return (
       <div
         className={`
@@ -25,6 +25,18 @@ export function CardDisplay({ card, hidden = false, size = 'md' }: CardDisplayPr
       >
         <span className="text-slate-300 text-3xl font-bold">?</span>
       </div>
+    );
+  }
+  if (!card) {
+    return (
+      <div
+        className={`
+          ${sizeClasses[size]}
+          rounded-xl flex items-center justify-center transition-all duration-300 relative
+          bg-gradient-to-br from-slate-600 to-slate-700 border-2 border-dashed border-slate-500
+          shadow-lg shadow-black/30
+        `}
+      />
     );
   }
 

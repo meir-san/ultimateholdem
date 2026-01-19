@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { GameState, Outcome, ActivityFeedItem, PriceHistoryPoint, Position } from '../types';
+import type { GameState, Outcome, ActivityFeedItem, PriceHistoryPoint, Position, TrueOdds, Card } from '../types';
 import { PHASES, INITIAL_BALANCE, INITIAL_POOL_BASE, INITIAL_ODDS, PREDICTION_WINDOW, PLATFORM_FEE } from '../config/constants';
 import { createDeck } from '../utils/cardUtils';
 import { calculateWinProbabilities } from '../utils/winProbability';
@@ -41,12 +41,62 @@ const generateUsername = (): string => {
   return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${num}`;
 };
 
+const cardKey = (card: Card): string => `${card.rank}${card.suit}`;
+const cardsKey = (cards: Card[]): string => cards.map(cardKey).sort().join('|');
+
+let oddsWorker: Worker | null = null;
+let oddsRequestId = 0;
+const oddsResolvers = new Map<number, (odds: TrueOdds) => void>();
+
+const getOddsWorker = (): Worker => {
+  if (!oddsWorker) {
+    oddsWorker = new Worker(new URL('../workers/oddsWorker.ts', import.meta.url), { type: 'module' });
+    oddsWorker.onmessage = (event: MessageEvent<{ requestId: number; odds: TrueOdds }>) => {
+      const { requestId, odds } = event.data;
+      const resolve = oddsResolvers.get(requestId);
+      if (resolve) {
+        oddsResolvers.delete(requestId);
+        resolve(odds);
+      }
+    };
+  }
+  return oddsWorker;
+};
+
+const computeOddsAsync = (
+  playerHoleCards: Card[],
+  dealerHoleCards: Card[],
+  communityCards: Card[],
+  deck: Card[],
+  phase: typeof PHASES[keyof typeof PHASES]
+): Promise<TrueOdds> => {
+  const requestId = oddsRequestId++;
+  const worker = getOddsWorker();
+  return new Promise((resolve) => {
+    oddsResolvers.set(requestId, resolve);
+    worker.postMessage({
+      requestId,
+      playerHoleCards,
+      dealerHoleCards,
+      communityCards,
+      deck,
+      phase,
+    });
+  });
+};
+
 export const useGameStore = create<GameStore>((set, get) => ({
   // Initial state
   deck: [],
   playerCards: [],
   dealerCards: [],
   communityCards: [],
+  pendingFlop: null,
+  pendingTurn: null,
+  pendingRiver: null,
+  pendingOdds: null,
+  pendingOddsPhase: null,
+  pendingOddsKey: null,
   phase: PHASES.PRE_DEAL,
   timer: PREDICTION_WINDOW,
   playerRaisedPreflop: false,
@@ -83,6 +133,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerCards: [],
       dealerCards: [],
       communityCards: [],
+      pendingFlop: null,
+      pendingTurn: null,
+      pendingRiver: null,
+      pendingOdds: null,
+      pendingOddsPhase: null,
+      pendingOddsKey: null,
       phase: PHASES.PRE_DEAL,
       timer: PREDICTION_WINDOW,
       playerRaisedPreflop: false,
@@ -113,14 +169,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const pCard1 = newDeck.pop()!;
       const pCard2 = newDeck.pop()!;
       const finalPlayerCards = [pCard1, pCard2];
-      
+      const preflopDeck = [...newDeck];
       const newOdds = calculateWinProbabilities(
         finalPlayerCards,
         [],
         [],
-        newDeck,
+        preflopDeck,
         PHASES.PLAYER_CARDS
       );
+
+      // Pre-deal flop for next phase and precompute exact odds during prediction window
+      const flopCard1 = newDeck.pop()!;
+      const flopCard2 = newDeck.pop()!;
+      const flopCard3 = newDeck.pop()!;
+      const pendingFlop = [flopCard1, flopCard2, flopCard3];
+      const pendingKey = cardsKey(pendingFlop);
       
       // Check if outcome is certain (100%)
       const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
@@ -132,6 +195,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
         timer: isCertain ? 0 : PREDICTION_WINDOW, // Prediction window after both cards
         trueOdds: newOdds,
         history: [...state.history, newOdds],
+        pendingFlop,
+        pendingTurn: null,
+        pendingRiver: null,
+        pendingOdds: null,
+        pendingOddsPhase: PHASES.FLOP,
+        pendingOddsKey: pendingKey,
+      });
+
+      computeOddsAsync(finalPlayerCards, [], pendingFlop, newDeck, PHASES.FLOP).then((odds) => {
+        const current = get();
+        if (current.pendingOddsPhase === PHASES.FLOP && current.pendingOddsKey === pendingKey) {
+          set({ pendingOdds: odds });
+        }
       });
       
       // If certain, auto-advance after a short delay
@@ -144,18 +220,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     } else if (phase === PHASES.PLAYER_CARDS) {
       // Phase 3: FLOP - Deal all three flop cards simultaneously
       const newDeck = [...deck];
-      const flopCard1 = newDeck.pop()!;
-      const flopCard2 = newDeck.pop()!;
-      const flopCard3 = newDeck.pop()!;
-      const flop = [flopCard1, flopCard2, flopCard3];
-      
-      const newOdds = calculateWinProbabilities(
-        playerCards,
-        [],
-        flop,
-        newDeck,
-        PHASES.FLOP
-      );
+      const flop = state.pendingFlop ?? [newDeck.pop()!, newDeck.pop()!, newDeck.pop()!];
+      const newOdds =
+        state.pendingOddsPhase === PHASES.FLOP && state.pendingOdds
+          ? state.pendingOdds
+          : calculateWinProbabilities(playerCards, [], flop, newDeck, PHASES.FLOP);
       
       // Check if outcome is certain (100%)
       const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
@@ -167,6 +236,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
         timer: isCertain ? 0 : PREDICTION_WINDOW, // Prediction window after all three cards
         trueOdds: newOdds,
         history: [...state.history, newOdds],
+        pendingFlop: null,
+        pendingOdds: null,
+        pendingOddsPhase: null,
+        pendingOddsKey: null,
+      });
+
+      // Pre-deal turn and precompute exact odds during prediction window
+      const turn = newDeck.pop()!;
+      const pendingTurnKey = cardsKey([turn]);
+      set({
+        deck: newDeck,
+        pendingTurn: turn,
+        pendingOdds: null,
+        pendingOddsPhase: PHASES.TURN,
+        pendingOddsKey: pendingTurnKey,
+      });
+      computeOddsAsync(playerCards, [], [...flop, turn], newDeck, PHASES.TURN).then((odds) => {
+        const current = get();
+        if (current.pendingOddsPhase === PHASES.TURN && current.pendingOddsKey === pendingTurnKey) {
+          set({ pendingOdds: odds });
+        }
       });
       
       // If certain, auto-advance after a short delay
@@ -179,15 +269,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     } else if (phase === PHASES.FLOP) {
       // Phase 4: TURN - Deal turn card
       const newDeck = [...deck];
-      const turn = newDeck.pop()!;
-      
-      const newOdds = calculateWinProbabilities(
-        playerCards,
-        [],
-        [...communityCards, turn],
-        newDeck,
-        PHASES.TURN
-      );
+      const turn = state.pendingTurn ?? newDeck.pop()!;
+      const newOdds =
+        state.pendingOddsPhase === PHASES.TURN && state.pendingOdds
+          ? state.pendingOdds
+          : calculateWinProbabilities(playerCards, [], [...communityCards, turn], newDeck, PHASES.TURN);
       
       // Check if outcome is certain (100%)
       const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
@@ -199,6 +285,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
         timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
         trueOdds: newOdds,
         history: [...state.history, newOdds],
+        pendingTurn: null,
+        pendingOdds: null,
+        pendingOddsPhase: null,
+        pendingOddsKey: null,
+      });
+
+      // Pre-deal river and precompute exact odds during prediction window
+      const river = newDeck.pop()!;
+      const pendingRiverKey = cardsKey([river]);
+      set({
+        deck: newDeck,
+        pendingRiver: river,
+        pendingOdds: null,
+        pendingOddsPhase: PHASES.RIVER,
+        pendingOddsKey: pendingRiverKey,
+      });
+      computeOddsAsync(playerCards, [], [...communityCards, turn, river], newDeck, PHASES.RIVER).then((odds) => {
+        const current = get();
+        if (current.pendingOddsPhase === PHASES.RIVER && current.pendingOddsKey === pendingRiverKey) {
+          set({ pendingOdds: odds });
+        }
       });
       
       // If certain, auto-advance after a short delay
@@ -211,16 +318,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     } else if (phase === PHASES.TURN) {
       // Phase 5: RIVER - Deal river card
       const newDeck = [...deck];
-      const river = newDeck.pop()!;
+      const river = state.pendingRiver ?? newDeck.pop()!;
       const newCommunity = [...communityCards, river];
-      
-      const newOdds = calculateWinProbabilities(
-        playerCards,
-        [],
-        newCommunity,
-        newDeck,
-        PHASES.RIVER
-      );
+
+      const newOdds =
+        state.pendingOddsPhase === PHASES.RIVER && state.pendingOdds
+          ? state.pendingOdds
+          : calculateWinProbabilities(playerCards, [], newCommunity, newDeck, PHASES.RIVER);
       
       // Check if outcome is certain (100%)
       const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
@@ -232,6 +336,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
         timer: isCertain ? 0 : PREDICTION_WINDOW, // Skip prediction window if certain
         trueOdds: newOdds,
         history: [...state.history, newOdds],
+        pendingRiver: null,
+        pendingOdds: null,
+        pendingOddsPhase: null,
+        pendingOddsKey: null,
       });
       
       // If certain, auto-advance after a short delay

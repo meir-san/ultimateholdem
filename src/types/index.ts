@@ -79,6 +79,12 @@ export interface GameState {
   playerCards: Card[];
   dealerCards: Card[];
   communityCards: Card[];
+  pendingFlop: Card[] | null;
+  pendingTurn: Card | null;
+  pendingRiver: Card | null;
+  pendingOdds: TrueOdds | null;
+  pendingOddsPhase: Phase | null;
+  pendingOddsKey: string | null;
   
   // Game phase
   phase: Phase;

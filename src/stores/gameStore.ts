@@ -71,10 +71,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startNewRound: () => {
     const newDeck = createDeck();
+    const realPreDealOdds = calculateWinProbabilities([], [], [], newDeck, PHASES.PRE_DEAL);
     const initialPool = {
-      player: Math.round(INITIAL_POOL_BASE * (INITIAL_ODDS.player / 100) + (Math.random() - 0.5) * 50),
-      dealer: Math.round(INITIAL_POOL_BASE * (INITIAL_ODDS.dealer / 100) + (Math.random() - 0.5) * 50),
-      push: Math.round(INITIAL_POOL_BASE * (INITIAL_ODDS.push / 100) + (Math.random() - 0.5) * 20)
+      player: Math.round(INITIAL_POOL_BASE * (realPreDealOdds.player / 100) + (Math.random() - 0.5) * 50),
+      dealer: Math.round(INITIAL_POOL_BASE * (realPreDealOdds.dealer / 100) + (Math.random() - 0.5) * 50),
+      push: Math.round(INITIAL_POOL_BASE * (realPreDealOdds.push / 100) + (Math.random() - 0.5) * 20)
     };
 
     set({
@@ -88,8 +89,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerRaisedPostflop: false,
       playerRaisedTurnRiver: false,
       playerFolded: false,
-      trueOdds: INITIAL_ODDS,
-      history: [INITIAL_ODDS],
+      trueOdds: realPreDealOdds,
+      history: [realPreDealOdds],
       roundResult: null,
       myPositions: { player: [], dealer: [], push: [] },
       selectedBetAmount: 10,

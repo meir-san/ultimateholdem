@@ -17,7 +17,7 @@ interface GameStore extends GameState {
   setTimer: (time: number) => void;
   decrementTimer: () => void;
   simulateCrowdBet: () => void;
-  toggleReveal: (player: 'player1' | 'player2' | 'player3') => void;
+  revealCard: (player: 'player1' | 'player2' | 'player3', index: 0 | 1) => void;
   rebalanceMarket: (prevTrueOdds: { player1: number; player2: number; player3: number; push: number }) => void;
   addActivityFeedItem: (item: Omit<ActivityFeedItem, 'id'>) => void;
   updatePriceHistory: () => void;
@@ -90,9 +90,9 @@ const computeOddsAsync = (
 
 const getRevealedHoleCards = (state: GameState) => {
   return {
-    player1: state.revealedPlayers.player1 ? state.player1Cards : [],
-    player2: state.revealedPlayers.player2 ? state.player2Cards : [],
-    player3: state.revealedPlayers.player3 ? state.player3Cards : [],
+    player1: state.player1Cards.filter((_, index) => state.revealedCards.player1[index]),
+    player2: state.player2Cards.filter((_, index) => state.revealedCards.player2[index]),
+    player3: state.player3Cards.filter((_, index) => state.revealedCards.player3[index]),
   };
 };
 
@@ -110,14 +110,20 @@ const addUniqueCards = (deck: Card[], cards: Card[]) => {
 const buildOddsDeck = (state: GameState) => {
   const deck = [...state.deck];
 
-  if (!state.revealedPlayers.player1 && state.player1Cards.length === 2) {
-    addUniqueCards(deck, state.player1Cards);
+  if (state.player1Cards.length === 2) {
+    state.player1Cards.forEach((card, index) => {
+      if (!state.revealedCards.player1[index]) addUniqueCards(deck, [card]);
+    });
   }
-  if (!state.revealedPlayers.player2 && state.player2Cards.length === 2) {
-    addUniqueCards(deck, state.player2Cards);
+  if (state.player2Cards.length === 2) {
+    state.player2Cards.forEach((card, index) => {
+      if (!state.revealedCards.player2[index]) addUniqueCards(deck, [card]);
+    });
   }
-  if (!state.revealedPlayers.player3 && state.player3Cards.length === 2) {
-    addUniqueCards(deck, state.player3Cards);
+  if (state.player3Cards.length === 2) {
+    state.player3Cards.forEach((card, index) => {
+      if (!state.revealedCards.player3[index]) addUniqueCards(deck, [card]);
+    });
   }
 
   if (state.phase === PHASES.PLAYER_CARDS && state.pendingFlop) {
@@ -135,14 +141,20 @@ const buildOddsDeck = (state: GameState) => {
 
 const buildNextOddsDeck = (deck: Card[], state: GameState) => {
   const nextDeck = [...deck];
-  if (!state.revealedPlayers.player1 && state.player1Cards.length === 2) {
-    addUniqueCards(nextDeck, state.player1Cards);
+  if (state.player1Cards.length === 2) {
+    state.player1Cards.forEach((card, index) => {
+      if (!state.revealedCards.player1[index]) addUniqueCards(nextDeck, [card]);
+    });
   }
-  if (!state.revealedPlayers.player2 && state.player2Cards.length === 2) {
-    addUniqueCards(nextDeck, state.player2Cards);
+  if (state.player2Cards.length === 2) {
+    state.player2Cards.forEach((card, index) => {
+      if (!state.revealedCards.player2[index]) addUniqueCards(nextDeck, [card]);
+    });
   }
-  if (!state.revealedPlayers.player3 && state.player3Cards.length === 2) {
-    addUniqueCards(nextDeck, state.player3Cards);
+  if (state.player3Cards.length === 2) {
+    state.player3Cards.forEach((card, index) => {
+      if (!state.revealedCards.player3[index]) addUniqueCards(nextDeck, [card]);
+    });
   }
   return nextDeck;
 };
@@ -181,7 +193,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   priceHistory: [],
   showReferences: true,
   chosenPlayer: 'player1',
-  revealedPlayers: { player1: true, player2: false, player3: false },
+  revealedCards: { player1: [true, true], player2: [false, false], player3: [false, false] },
   firstBuyOutcome: null,
   roundHistory: [],
 
@@ -222,7 +234,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       activityFeed: [],
       priceHistory: [],
       chosenPlayer: 'player1',
-      revealedPlayers: { player1: true, player2: false, player3: false },
+      revealedCards: { player1: [true, true], player2: [false, false], player3: [false, false] },
       firstBuyOutcome: null,
       pool: initialPool,
       crowdBets: initialPool,
@@ -556,13 +568,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const isFirstBuy = state.firstBuyOutcome === null && type !== 'push';
     let nextFirstBuy = state.firstBuyOutcome;
     let nextChosenPlayer = state.chosenPlayer;
-    let nextRevealed = state.revealedPlayers;
+    let nextRevealed = state.revealedCards;
 
     if (isFirstBuy) {
       nextFirstBuy = type;
       nextChosenPlayer = type;
-      nextRevealed = { player1: false, player2: false, player3: false };
-      nextRevealed[type] = true;
+      nextRevealed = {
+        player1: [false, false],
+        player2: [false, false],
+        player3: [false, false],
+      };
+      nextRevealed[type] = [true, true];
     }
     
     set({
@@ -573,7 +589,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         [type]: [...state.myPositions[type], newPosition],
       },
       chosenPlayer: nextChosenPlayer,
-      revealedPlayers: nextRevealed,
+      revealedCards: nextRevealed,
       firstBuyOutcome: nextFirstBuy,
       pool: {
         ...state.pool,
@@ -643,7 +659,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
-  toggleReveal: (player) => {
+  revealCard: (player, index) => {
     const state = get();
     const hasCards =
       player === 'player1'
@@ -656,13 +672,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    const isPrimary = state.chosenPlayer === player;
+    if (state.revealedCards[player][index]) {
+      return;
+    }
+
     const nextRevealed = {
-      ...state.revealedPlayers,
-      [player]: isPrimary ? true : !state.revealedPlayers[player],
+      ...state.revealedCards,
+      [player]: state.revealedCards[player].map((value, idx) => (idx === index ? true : value)) as [boolean, boolean],
     };
 
-    set({ revealedPlayers: nextRevealed });
+    set({ revealedCards: nextRevealed });
 
     const updated = get();
     const revealed = getRevealedHoleCards(updated);

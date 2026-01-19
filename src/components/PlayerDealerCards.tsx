@@ -284,10 +284,12 @@ interface PlayerDealerCardsProps {
   player2Cards: Card[];
   player3Cards: Card[];
   communityCards: Card[];
-  showPlayer1Cards: boolean;
-  showPlayer2Cards: boolean;
-  showPlayer3Cards: boolean;
-  onToggleReveal: (player: 'player1' | 'player2' | 'player3') => void;
+  revealedCards: {
+    player1: [boolean, boolean];
+    player2: [boolean, boolean];
+    player3: [boolean, boolean];
+  };
+  onRevealCard: (player: 'player1' | 'player2' | 'player3', index: 0 | 1) => void;
 }
 
 export function PlayerDealerCards({
@@ -296,10 +298,8 @@ export function PlayerDealerCards({
   player2Cards,
   player3Cards,
   communityCards,
-  showPlayer1Cards,
-  showPlayer2Cards,
-  showPlayer3Cards,
-  onToggleReveal,
+  revealedCards,
+  onRevealCard,
 }: PlayerDealerCardsProps) {
   const isPreDeal = phase === PHASES.PRE_DEAL;
   const isPlayerCards = phase === PHASES.PLAYER_CARDS;
@@ -332,10 +332,7 @@ export function PlayerDealerCards({
   return (
     <div className="grid grid-cols-3 gap-4 mb-3">
       {/* Player Cards */}
-      <div
-        className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col cursor-pointer hover:border-slate-600"
-        onClick={() => onToggleReveal('player1')}
-      >
+      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-emerald-500 rounded-full" />
@@ -347,31 +344,36 @@ export function PlayerDealerCards({
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {player1Cards.length === 0 ? (
-            <>
-              <CardDisplay card={null} />
-              <CardDisplay card={null} />
-            </>
-          ) : showPlayer1Cards ? (
-            <>
-              {player1Cards.map((card, i) => (
-                <CardDisplay key={i} card={card} />
-              ))}
-            </>
-          ) : (
-            <>
-              <CardDisplay card={null} hidden />
-              <CardDisplay card={null} hidden />
-            </>
-          )}
+          {[0, 1].map((index) => {
+            const card = player1Cards[index];
+            const isRevealed = revealedCards.player1[index];
+            return (
+              <div key={index} className="relative">
+                <CardDisplay card={card || null} hidden={!!card && !isRevealed} />
+                {card && !isRevealed && (
+                  <button
+                    type="button"
+                    onClick={() => onRevealCard('player1', index as 0 | 1)}
+                    className="absolute -top-1 -right-1 w-5 h-5"
+                    aria-label="Reveal card"
+                  >
+                    <span className="block w-0 h-0 border-t-[12px] border-l-[12px] border-t-slate-200/90 border-l-transparent animate-pulse" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Player Hand Description */}
         <div className="text-center text-sm font-medium text-emerald-400">
-          {player1Cards.length > 0 && showPlayer1Cards
+          {player1Cards.length > 0 && revealedCards.player1.some(Boolean)
             ? isResolution
               ? getFullHandDescription(player1Cards, communityCards)
-              : getHoleCardDescription(player1Cards, communityCards)
+              : getHoleCardDescription(
+                  player1Cards.filter((_, i) => revealedCards.player1[i]),
+                  communityCards
+                )
             : player1Cards.length > 0
               ? 'Hidden'
               : '—'}
@@ -379,10 +381,7 @@ export function PlayerDealerCards({
       </div>
 
       {/* Player 2 Cards */}
-      <div
-        className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col cursor-pointer hover:border-slate-600"
-        onClick={() => onToggleReveal('player2')}
-      >
+      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-amber-500 rounded-full" />
@@ -394,32 +393,36 @@ export function PlayerDealerCards({
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {player2Cards.length === 0 ? (
-            <>
-              <CardDisplay card={null} />
-              <CardDisplay card={null} />
-            </>
-          ) : showPlayer2Cards ? (
-            <>
-              {player2Cards.map((card, i) => (
-                <CardDisplay key={i} card={card} />
-              ))}
-              {player2Cards.length === 1 && <CardDisplay card={null} />}
-            </>
-          ) : (
-            <>
-              <CardDisplay card={null} hidden />
-              <CardDisplay card={null} hidden />
-            </>
-          )}
+          {[0, 1].map((index) => {
+            const card = player2Cards[index];
+            const isRevealed = revealedCards.player2[index];
+            return (
+              <div key={index} className="relative">
+                <CardDisplay card={card || null} hidden={!!card && !isRevealed} />
+                {card && !isRevealed && (
+                  <button
+                    type="button"
+                    onClick={() => onRevealCard('player2', index as 0 | 1)}
+                    className="absolute -top-1 -right-1 w-5 h-5"
+                    aria-label="Reveal card"
+                  >
+                    <span className="block w-0 h-0 border-t-[12px] border-l-[12px] border-t-slate-200/90 border-l-transparent animate-pulse" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Player 2 Hand Description */}
         <div className="text-center text-sm font-medium text-amber-400">
-          {showPlayer2Cards && player2Cards.length > 0
+          {player2Cards.length > 0 && revealedCards.player2.some(Boolean)
             ? isResolution
               ? getFullHandDescription(player2Cards, communityCards)
-              : getHoleCardDescription(player2Cards, communityCards)
+              : getHoleCardDescription(
+                  player2Cards.filter((_, i) => revealedCards.player2[i]),
+                  communityCards
+                )
             : player2Cards.length > 0
               ? 'Hidden'
               : '—'}
@@ -427,10 +430,7 @@ export function PlayerDealerCards({
       </div>
 
       {/* Player 3 Cards */}
-      <div
-        className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col cursor-pointer hover:border-slate-600"
-        onClick={() => onToggleReveal('player3')}
-      >
+      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-purple-500 rounded-full" />
@@ -442,32 +442,36 @@ export function PlayerDealerCards({
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {player3Cards.length === 0 ? (
-            <>
-              <CardDisplay card={null} />
-              <CardDisplay card={null} />
-            </>
-          ) : showPlayer3Cards ? (
-            <>
-              {player3Cards.map((card, i) => (
-                <CardDisplay key={i} card={card} />
-              ))}
-              {player3Cards.length === 1 && <CardDisplay card={null} />}
-            </>
-          ) : (
-            <>
-              <CardDisplay card={null} hidden />
-              <CardDisplay card={null} hidden />
-            </>
-          )}
+          {[0, 1].map((index) => {
+            const card = player3Cards[index];
+            const isRevealed = revealedCards.player3[index];
+            return (
+              <div key={index} className="relative">
+                <CardDisplay card={card || null} hidden={!!card && !isRevealed} />
+                {card && !isRevealed && (
+                  <button
+                    type="button"
+                    onClick={() => onRevealCard('player3', index as 0 | 1)}
+                    className="absolute -top-1 -right-1 w-5 h-5"
+                    aria-label="Reveal card"
+                  >
+                    <span className="block w-0 h-0 border-t-[12px] border-l-[12px] border-t-slate-200/90 border-l-transparent animate-pulse" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Player 3 Hand Description */}
         <div className="text-center text-sm font-medium text-purple-400">
-          {showPlayer3Cards && player3Cards.length > 0
+          {player3Cards.length > 0 && revealedCards.player3.some(Boolean)
             ? isResolution
               ? getFullHandDescription(player3Cards, communityCards)
-              : getHoleCardDescription(player3Cards, communityCards)
+              : getHoleCardDescription(
+                  player3Cards.filter((_, i) => revealedCards.player3[i]),
+                  communityCards
+                )
             : player3Cards.length > 0
               ? 'Hidden'
               : '—'}

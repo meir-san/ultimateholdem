@@ -123,10 +123,10 @@ export interface GameState {
   priceHistory: PriceHistoryPoint[];
   showReferences: boolean;
   chosenPlayer: 'player1' | 'player2' | 'player3';
-  revealedPlayers: {
-    player1: boolean;
-    player2: boolean;
-    player3: boolean;
+  revealedCards: {
+    player1: [boolean, boolean];
+    player2: [boolean, boolean];
+    player3: [boolean, boolean];
   };
   firstBuyOutcome: 'player1' | 'player2' | 'player3' | null;
   

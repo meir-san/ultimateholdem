@@ -3,7 +3,7 @@ import type { GameState, Outcome, ActivityFeedItem, PriceHistoryPoint, Position,
 import { PHASES, INITIAL_BALANCE, INITIAL_POOL_BASE, INITIAL_ODDS, PREDICTION_WINDOW, PLATFORM_FEE } from '../config/constants';
 import { createDeck } from '../utils/cardUtils';
 import { calculateWinProbabilities } from '../utils/winProbability';
-import { evaluateHand, determineWinner } from '../utils/pokerHands';
+import { evaluateHand, determineWinnerThree } from '../utils/pokerHands';
 import { calculateShares, getTotalAmountPaid, getTotalShares, getPotentialPayout } from '../utils/marketPricing';
 import { getShortHandDescription } from '../utils/handDescription';
 
@@ -11,26 +11,26 @@ interface GameStore extends GameState {
   // Actions
   startNewRound: () => void;
   advancePhase: () => void;
-  placeBet: (type: 'player' | 'dealer' | 'push') => void;
-  sellPosition: (type: 'player' | 'dealer' | 'push') => void;
+  placeBet: (type: 'player' | 'dealer' | 'player3' | 'push') => void;
+  sellPosition: (type: 'player' | 'dealer' | 'player3' | 'push') => void;
   setSelectedBetAmount: (amount: number) => void;
   setTimer: (time: number) => void;
   decrementTimer: () => void;
   simulateCrowdBet: () => void;
-  rebalanceMarket: (prevTrueOdds: { player: number; dealer: number; push: number }) => void;
+  rebalanceMarket: (prevTrueOdds: { player: number; dealer: number; player3: number; push: number }) => void;
   addActivityFeedItem: (item: Omit<ActivityFeedItem, 'id'>) => void;
   updatePriceHistory: () => void;
   resolveRound: (result: Outcome) => void;
   nextRound: () => void;
   
   // Computed getters
-  getMyBetTotal: (type: 'player' | 'dealer' | 'push') => number;
+  getMyBetTotal: (type: 'player' | 'dealer' | 'player3' | 'push') => number;
   getTotalMyBets: () => number;
-  getPositionValue: (type: 'player' | 'dealer' | 'push') => number;
-  getTotalShares: (type: 'player' | 'dealer' | 'push') => number;
-  getPotentialPayout: (type: 'player' | 'dealer' | 'push') => number;
-  getUnrealizedPnL: (type: 'player' | 'dealer' | 'push') => number;
-  getImpliedOdds: (type: 'player' | 'dealer' | 'push') => number;
+  getPositionValue: (type: 'player' | 'dealer' | 'player3' | 'push') => number;
+  getTotalShares: (type: 'player' | 'dealer' | 'player3' | 'push') => number;
+  getPotentialPayout: (type: 'player' | 'dealer' | 'player3' | 'push') => number;
+  getUnrealizedPnL: (type: 'player' | 'dealer' | 'player3' | 'push') => number;
+  getImpliedOdds: (type: 'player' | 'dealer' | 'player3' | 'push') => number;
   isMarketLocked: () => boolean;
 }
 
@@ -66,6 +66,7 @@ const getOddsWorker = (): Worker => {
 const computeOddsAsync = (
   playerHoleCards: Card[],
   dealerHoleCards: Card[],
+  player3HoleCards: Card[],
   communityCards: Card[],
   deck: Card[],
   phase: typeof PHASES[keyof typeof PHASES]
@@ -78,6 +79,7 @@ const computeOddsAsync = (
       requestId,
       playerHoleCards,
       dealerHoleCards,
+      player3HoleCards,
       communityCards,
       deck,
       phase,
@@ -90,6 +92,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   deck: [],
   playerCards: [],
   dealerCards: [],
+  player3Cards: [],
   communityCards: [],
   pendingFlop: null,
   pendingTurn: null,
@@ -109,11 +112,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
   roundNumber: 1,
   roundProfit: null,
   balance: INITIAL_BALANCE,
-  myPositions: { player: [], dealer: [], push: [] },
+  myPositions: { player: [], dealer: [], player3: [], push: [] },
   selectedBetAmount: 10,
   lifetimeVolume: 0,
-  pool: { player: 0, dealer: 0, push: 0 },
-  crowdBets: { player: 0, dealer: 0, push: 0 },
+  pool: { player: 0, dealer: 0, player3: 0, push: 0 },
+  crowdBets: { player: 0, dealer: 0, player3: 0, push: 0 },
   activityFeed: [],
   priceHistory: [],
   showReferences: true,
@@ -121,10 +124,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startNewRound: () => {
     const newDeck = createDeck();
-    const realPreDealOdds = calculateWinProbabilities([], [], [], newDeck, PHASES.PRE_DEAL);
+    const realPreDealOdds = calculateWinProbabilities([], [], [], [], newDeck, PHASES.PRE_DEAL);
     const initialPool = {
       player: Math.round(INITIAL_POOL_BASE * (realPreDealOdds.player / 100) + (Math.random() - 0.5) * 50),
       dealer: Math.round(INITIAL_POOL_BASE * (realPreDealOdds.dealer / 100) + (Math.random() - 0.5) * 50),
+      player3: Math.round(INITIAL_POOL_BASE * (realPreDealOdds.player3 / 100) + (Math.random() - 0.5) * 50),
       push: Math.round(INITIAL_POOL_BASE * (realPreDealOdds.push / 100) + (Math.random() - 0.5) * 20)
     };
 
@@ -132,6 +136,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       deck: newDeck,
       playerCards: [],
       dealerCards: [],
+      player3Cards: [],
       communityCards: [],
       pendingFlop: null,
       pendingTurn: null,
@@ -148,7 +153,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       trueOdds: realPreDealOdds,
       history: [realPreDealOdds],
       roundResult: null,
-      myPositions: { player: [], dealer: [], push: [] },
+      myPositions: { player: [], dealer: [], player3: [], push: [] },
       selectedBetAmount: 10,
       roundProfit: null,
       activityFeed: [],
@@ -159,6 +164,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
   },
 
+  // advancePhase deals cards and prepares odds for the next phase.
+  // Exact odds are precomputed in a worker during the prediction window.
   advancePhase: () => {
     const state = get();
     const { phase, deck, playerCards, communityCards } = state;
@@ -174,6 +181,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         finalPlayerCards,
         [],
         [],
+        [],
         preflopDeck,
         PHASES.PLAYER_CARDS
       );
@@ -186,7 +194,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const pendingKey = cardsKey(pendingFlop);
       
       // Check if outcome is certain (100%)
-      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      const isCertain =
+        newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.player3 >= 100 || newOdds.push >= 100;
       
       set({
         deck: newDeck,
@@ -203,7 +212,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingOddsKey: pendingKey,
       });
 
-      computeOddsAsync(finalPlayerCards, [], pendingFlop, newDeck, PHASES.FLOP).then((odds) => {
+      computeOddsAsync(finalPlayerCards, [], [], pendingFlop, newDeck, PHASES.FLOP).then((odds) => {
         const current = get();
         if (current.pendingOddsPhase === PHASES.FLOP && current.pendingOddsKey === pendingKey) {
           set({ pendingOdds: odds });
@@ -224,10 +233,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const newOdds =
         state.pendingOddsPhase === PHASES.FLOP && state.pendingOdds
           ? state.pendingOdds
-          : calculateWinProbabilities(playerCards, [], flop, newDeck, PHASES.FLOP);
+          : calculateWinProbabilities(playerCards, [], [], flop, newDeck, PHASES.FLOP);
       
       // Check if outcome is certain (100%)
-      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      const isCertain =
+        newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.player3 >= 100 || newOdds.push >= 100;
       
       set({
         deck: newDeck,
@@ -252,7 +262,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingOddsPhase: PHASES.TURN,
         pendingOddsKey: pendingTurnKey,
       });
-      computeOddsAsync(playerCards, [], [...flop, turn], newDeck, PHASES.TURN).then((odds) => {
+      computeOddsAsync(playerCards, [], [], [...flop, turn], newDeck, PHASES.TURN).then((odds) => {
         const current = get();
         if (current.pendingOddsPhase === PHASES.TURN && current.pendingOddsKey === pendingTurnKey) {
           set({ pendingOdds: odds });
@@ -273,10 +283,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const newOdds =
         state.pendingOddsPhase === PHASES.TURN && state.pendingOdds
           ? state.pendingOdds
-          : calculateWinProbabilities(playerCards, [], [...communityCards, turn], newDeck, PHASES.TURN);
+          : calculateWinProbabilities(playerCards, [], [], [...communityCards, turn], newDeck, PHASES.TURN);
       
       // Check if outcome is certain (100%)
-      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      const isCertain =
+        newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.player3 >= 100 || newOdds.push >= 100;
       
       set({
         deck: newDeck,
@@ -301,7 +312,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingOddsPhase: PHASES.RIVER,
         pendingOddsKey: pendingRiverKey,
       });
-      computeOddsAsync(playerCards, [], [...communityCards, turn, river], newDeck, PHASES.RIVER).then((odds) => {
+      computeOddsAsync(playerCards, [], [], [...communityCards, turn, river], newDeck, PHASES.RIVER).then((odds) => {
         const current = get();
         if (current.pendingOddsPhase === PHASES.RIVER && current.pendingOddsKey === pendingRiverKey) {
           set({ pendingOdds: odds });
@@ -324,10 +335,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const newOdds =
         state.pendingOddsPhase === PHASES.RIVER && state.pendingOdds
           ? state.pendingOdds
-          : calculateWinProbabilities(playerCards, [], newCommunity, newDeck, PHASES.RIVER);
+          : calculateWinProbabilities(playerCards, [], [], newCommunity, newDeck, PHASES.RIVER);
       
       // Check if outcome is certain (100%)
-      const isCertain = newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.push >= 100;
+      const isCertain =
+        newOdds.player >= 100 || newOdds.dealer >= 100 || newOdds.player3 >= 100 || newOdds.push >= 100;
       
       set({
         deck: newDeck,
@@ -350,54 +362,52 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
       
     } else if (phase === PHASES.RIVER) {
-      // Phase 6: DEALER_CARDS - Deal both dealer cards simultaneously, then resolve immediately
+      // Phase 6: DEALER_CARDS - Deal Player 2 + Player 3 cards, then resolve immediately
       const newDeck = [...deck];
       const dCard1 = newDeck.pop()!;
       const dCard2 = newDeck.pop()!;
+      const p3Card1 = newDeck.pop()!;
+      const p3Card2 = newDeck.pop()!;
       const finalDealerCards = [dCard1, dCard2];
+      const finalPlayer3Cards = [p3Card1, p3Card2];
       
       // All cards dealt, evaluate hands and resolve immediately
       const playerHand = evaluateHand([...playerCards, ...communityCards]);
       const dealerHand = evaluateHand([...finalDealerCards, ...communityCards]);
+      const player3Hand = evaluateHand([...finalPlayer3Cards, ...communityCards]);
+
+      const result = determineWinnerThree(playerHand, dealerHand, player3Hand);
+      const winningCards =
+        result === 'player'
+          ? playerCards
+          : result === 'dealer'
+            ? finalDealerCards
+            : result === 'player3'
+              ? finalPlayer3Cards
+              : playerCards;
+      const handDescription = getShortHandDescription(winningCards, communityCards);
       
-      // Check dealer qualification (needs pair or better)
-      if (dealerHand.rank < 2) {
-        // Dealer doesn't qualify - player wins
-        const handDescription = getShortHandDescription(playerCards, communityCards);
-        set({
-          deck: newDeck,
-          dealerCards: finalDealerCards,
-          roundResult: 'player',
-          trueOdds: { player: 100, dealer: 0, push: 0 },
-          history: [...state.history, { player: 100, dealer: 0, push: 0 }],
-          phase: PHASES.RESOLUTION,
-          roundHistory: [...state.roundHistory, { winner: 'player', handDescription }],
-        });
-        get().resolveRound('player');
-      } else {
-        const result = determineWinner(playerHand, dealerHand);
-        const winningCards = result === 'player' ? playerCards : finalDealerCards;
-        const handDescription = getShortHandDescription(winningCards, communityCards);
-        
-        set({
-          deck: newDeck,
-          dealerCards: finalDealerCards,
-          roundResult: result,
-          trueOdds: {
-            player: result === 'player' ? 100 : 0,
-            dealer: result === 'dealer' ? 100 : 0,
-            push: result === 'push' ? 100 : 0,
-          },
-          history: [...state.history, {
-            player: result === 'player' ? 100 : 0,
-            dealer: result === 'dealer' ? 100 : 0,
-            push: result === 'push' ? 100 : 0,
-          }],
-          phase: PHASES.RESOLUTION,
-          roundHistory: [...state.roundHistory, { winner: result, handDescription }],
-        });
-        get().resolveRound(result);
-      }
+      set({
+        deck: newDeck,
+        dealerCards: finalDealerCards,
+        player3Cards: finalPlayer3Cards,
+        roundResult: result,
+        trueOdds: {
+          player: result === 'player' ? 100 : 0,
+          dealer: result === 'dealer' ? 100 : 0,
+          player3: result === 'player3' ? 100 : 0,
+          push: result === 'push' ? 100 : 0,
+        },
+        history: [...state.history, {
+          player: result === 'player' ? 100 : 0,
+          dealer: result === 'dealer' ? 100 : 0,
+          player3: result === 'player3' ? 100 : 0,
+          push: result === 'push' ? 100 : 0,
+        }],
+        phase: PHASES.RESOLUTION,
+        roundHistory: [...state.roundHistory, { winner: result, handDescription }],
+      });
+      get().resolveRound(result);
     }
   },
 
@@ -433,7 +443,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     state.addActivityFeedItem({
       username: 'YOU',
       type,
-      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : 'Push',
+      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : type === 'player3' ? 'Player 3' : 'Push',
       amount,
       isYou: true,
     });
@@ -464,7 +474,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     state.addActivityFeedItem({
       username: 'YOU',
       type,
-      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : 'Push',
+      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : type === 'player3' ? 'Player 3' : 'Push',
       amount: cashOut.toFixed(2),
       isYou: true,
       isSell: true,
@@ -483,20 +493,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const adjustedOdds = {
       player: Math.max(5, state.trueOdds.player + noise()),
       dealer: Math.max(5, state.trueOdds.dealer + noise()),
+      player3: Math.max(5, state.trueOdds.player3 + noise()),
       push: Math.max(1, state.trueOdds.push + noise()),
     };
     
-    const total = adjustedOdds.player + adjustedOdds.dealer + adjustedOdds.push;
+    const total = adjustedOdds.player + adjustedOdds.dealer + adjustedOdds.player3 + adjustedOdds.push;
     const normalized = {
       player: adjustedOdds.player / total,
       dealer: adjustedOdds.dealer / total,
+      player3: adjustedOdds.player3 / total,
       push: adjustedOdds.push / total,
     };
     
     const rand = Math.random();
-    let type: 'player' | 'dealer' | 'push';
+    let type: 'player' | 'dealer' | 'player3' | 'push';
     if (rand < normalized.player) type = 'player';
     else if (rand < normalized.player + normalized.dealer) type = 'dealer';
+    else if (rand < normalized.player + normalized.dealer + normalized.player3) type = 'player3';
     else type = 'push';
     
     const amount = Math.floor(Math.pow(Math.random(), 1.5) * 75) + 5;
@@ -515,42 +528,48 @@ export const useGameStore = create<GameStore>((set, get) => ({
     state.addActivityFeedItem({
       username: generateUsername(),
       type,
-      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : 'Push',
+      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : type === 'player3' ? 'Player 3' : 'Push',
       amount,
     });
   },
 
-  rebalanceMarket: (prevTrueOdds: { player: number; dealer: number; push: number }) => {
+  rebalanceMarket: (prevTrueOdds: { player: number; dealer: number; player3: number; push: number }) => {
     const state = get();
     
     const playerShift = Math.abs(state.trueOdds.player - prevTrueOdds.player);
     const dealerShift = Math.abs(state.trueOdds.dealer - prevTrueOdds.dealer);
+    const player3Shift = Math.abs(state.trueOdds.player3 - prevTrueOdds.player3);
     
-    if (playerShift > 3 || dealerShift > 3) {
+    if (playerShift > 3 || dealerShift > 3 || player3Shift > 3) {
       set((state) => {
-        const crowdTotal = state.crowdBets.player + state.crowdBets.dealer + state.crowdBets.push;
+        const crowdTotal =
+          state.crowdBets.player + state.crowdBets.dealer + state.crowdBets.player3 + state.crowdBets.push;
         
         const rebalanceFactor = 0.9;
         const currentImplied = {
-          player: crowdTotal > 0 ? state.crowdBets.player / crowdTotal : 0.33,
-          dealer: crowdTotal > 0 ? state.crowdBets.dealer / crowdTotal : 0.33,
-          push: crowdTotal > 0 ? state.crowdBets.push / crowdTotal : 0.33,
+          player: crowdTotal > 0 ? state.crowdBets.player / crowdTotal : 0.25,
+          dealer: crowdTotal > 0 ? state.crowdBets.dealer / crowdTotal : 0.25,
+          player3: crowdTotal > 0 ? state.crowdBets.player3 / crowdTotal : 0.25,
+          push: crowdTotal > 0 ? state.crowdBets.push / crowdTotal : 0.25,
         };
         const targetImplied = {
           player: state.trueOdds.player / 100,
           dealer: state.trueOdds.dealer / 100,
+          player3: state.trueOdds.player3 / 100,
           push: state.trueOdds.push / 100,
         };
         
         const newCrowdBets = {
           player: Math.max(10, crowdTotal * (currentImplied.player + (targetImplied.player - currentImplied.player) * rebalanceFactor)),
           dealer: Math.max(10, crowdTotal * (currentImplied.dealer + (targetImplied.dealer - currentImplied.dealer) * rebalanceFactor)),
+          player3: Math.max(10, crowdTotal * (currentImplied.player3 + (targetImplied.player3 - currentImplied.player3) * rebalanceFactor)),
           push: Math.max(10, crowdTotal * (currentImplied.push + (targetImplied.push - currentImplied.push) * rebalanceFactor)),
         };
         
         const userPoolContribution = {
           player: state.myPositions.player.reduce((sum, p) => sum + (p.shares * p.entryOdds), 0),
           dealer: state.myPositions.dealer.reduce((sum, p) => sum + (p.shares * p.entryOdds), 0),
+          player3: state.myPositions.player3.reduce((sum, p) => sum + (p.shares * p.entryOdds), 0),
           push: state.myPositions.push.reduce((sum, p) => sum + (p.shares * p.entryOdds), 0),
         };
         
@@ -558,6 +577,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           pool: {
             player: newCrowdBets.player + userPoolContribution.player,
             dealer: newCrowdBets.dealer + userPoolContribution.dealer,
+            player3: newCrowdBets.player3 + userPoolContribution.player3,
             push: newCrowdBets.push + userPoolContribution.push,
           },
           crowdBets: newCrowdBets,
@@ -586,6 +606,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         time: Date.now(),
         player: state.trueOdds.player,
         dealer: state.trueOdds.dealer,
+        player3: state.trueOdds.player3,
         push: state.trueOdds.push,
       };
       return {
@@ -599,6 +620,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const totalPaidAmount = 
       getTotalAmountPaid(state.myPositions.player) +
       getTotalAmountPaid(state.myPositions.dealer) +
+      getTotalAmountPaid(state.myPositions.player3) +
       getTotalAmountPaid(state.myPositions.push);
     
     const payout = getPotentialPayout(state.myPositions[result]);
@@ -620,7 +642,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
   getMyBetTotal: (type) => getTotalAmountPaid(get().myPositions[type]),
   getTotalMyBets: () => {
     const state = get();
-    return state.getMyBetTotal('player') + state.getMyBetTotal('dealer') + state.getMyBetTotal('push');
+    return (
+      state.getMyBetTotal('player') +
+      state.getMyBetTotal('dealer') +
+      state.getMyBetTotal('player3') +
+      state.getMyBetTotal('push')
+    );
   },
   getPositionValue: (type) => {
     const state = get();
@@ -648,7 +675,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (state.phase === PHASES.RESOLUTION) return true;
     if (state.playerFolded) return true;
     // Lock betting if any outcome is certain (100% probability)
-    if (state.trueOdds.player >= 100 || state.trueOdds.dealer >= 100 || state.trueOdds.push >= 100) {
+    if (
+      state.trueOdds.player >= 100 ||
+      state.trueOdds.dealer >= 100 ||
+      state.trueOdds.player3 >= 100 ||
+      state.trueOdds.push >= 100
+    ) {
       return true;
     }
     return false;

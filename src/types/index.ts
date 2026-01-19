@@ -35,25 +35,28 @@ export interface Position {
 export interface Positions {
   player: Position[];
   dealer: Position[];
+  player3: Position[];
   push: Position[];
 }
 
 export interface Pool {
   player: number;
   dealer: number;
+  player3: number;
   push: number;
 }
 
 export interface TrueOdds {
   player: number;
   dealer: number;
+  player3: number;
   push: number;
 }
 
 export interface ActivityFeedItem {
   id: number;
   username: string;
-  type: 'player' | 'dealer' | 'push' | 'rebalance';
+  type: 'player' | 'dealer' | 'player3' | 'push' | 'rebalance';
   typeLabel: string;
   amount: number | string;
   isYou?: boolean;
@@ -65,11 +68,12 @@ export interface PriceHistoryPoint {
   time: number;
   player: number;
   dealer: number;
+  player3: number;
   push: number;
 }
 
 export interface RoundHistoryItem {
-  winner: 'player' | 'dealer' | 'push';
+  winner: 'player' | 'dealer' | 'player3' | 'push';
   handDescription: string; // e.g., "Pair of K", "4 of a kind A", "High Card 8"
 }
 
@@ -78,6 +82,7 @@ export interface GameState {
   deck: Card[];
   playerCards: Card[];
   dealerCards: Card[];
+  player3Cards: Card[];
   communityCards: Card[];
   pendingFlop: Card[] | null;
   pendingTurn: Card | null;
@@ -101,7 +106,7 @@ export interface GameState {
   history: TrueOdds[];
   
   // Round state
-  roundResult: 'player' | 'dealer' | 'push' | null;
+  roundResult: 'player' | 'dealer' | 'player3' | 'push' | null;
   roundNumber: number;
   roundProfit: number | null;
   
@@ -122,4 +127,4 @@ export interface GameState {
   roundHistory: RoundHistoryItem[];
 }
 
-export type Outcome = 'player' | 'dealer' | 'push';
+export type Outcome = 'player' | 'dealer' | 'player3' | 'push';

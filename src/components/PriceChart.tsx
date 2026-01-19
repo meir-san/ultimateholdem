@@ -4,6 +4,7 @@ interface PriceChartProps {
   priceHistory: PriceHistoryPoint[];
   hasPlayerPosition: boolean;
   hasDealerPosition: boolean;
+  hasPlayer3Position: boolean;
   hasPushPosition: boolean;
 }
 
@@ -11,6 +12,7 @@ export function PriceChart({
   priceHistory,
   hasPlayerPosition,
   hasDealerPosition,
+  hasPlayer3Position,
   hasPushPosition,
 }: PriceChartProps) {
   if (priceHistory.length < 2) {
@@ -33,7 +35,7 @@ export function PriceChart({
   const minY = 0;
   const maxY = 100;
 
-  const generatePath = (key: 'player' | 'dealer' | 'push') => {
+  const generatePath = (key: 'player' | 'dealer' | 'player3' | 'push') => {
     return priceHistory
       .map((point, i) => {
         const x = padding.left + (i / (priceHistory.length - 1)) * chartWidth;
@@ -75,6 +77,16 @@ export function PriceChart({
           </div>
           <div className="flex items-center gap-1.5">
             <div
+              className={`w-4 h-1 rounded-full bg-purple-400 ${
+                hasPlayer3Position ? 'ring-2 ring-purple-400/50' : ''
+              }`}
+            />
+            <span className={hasPlayer3Position ? 'text-purple-300 font-semibold' : 'text-purple-400'}>
+              Player 3 {hasPlayer3Position && '●'}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div
               className={`w-4 h-1 rounded-full bg-slate-400 ${
                 hasPushPosition ? 'ring-2 ring-slate-400/50' : ''
               }`}
@@ -103,6 +115,13 @@ export function PriceChart({
             </feMerge>
           </filter>
           <filter id="glow-slate" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+          <filter id="glow-purple" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="3" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
@@ -144,7 +163,7 @@ export function PriceChart({
           opacity={hasPlayerPosition ? 1 : 0.7}
         />
 
-        {/* Dealer line */}
+        {/* Player 2 line */}
         <path
           d={generatePath('dealer')}
           fill="none"
@@ -154,6 +173,18 @@ export function PriceChart({
           strokeLinejoin="round"
           filter={hasDealerPosition ? 'url(#glow-amber)' : undefined}
           opacity={hasDealerPosition ? 1 : 0.7}
+        />
+
+        {/* Player 3 line */}
+        <path
+          d={generatePath('player3')}
+          fill="none"
+          stroke="#a855f7"
+          strokeWidth={hasPlayer3Position ? '4' : '2'}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          filter={hasPlayer3Position ? 'url(#glow-purple)' : undefined}
+          opacity={hasPlayer3Position ? 1 : 0.7}
         />
 
         {/* Push line */}
@@ -203,6 +234,23 @@ export function PriceChart({
               fontWeight="bold"
             >
               {currentPrices.dealer.toFixed(0)}¢
+            </text>
+
+            <circle
+              cx={width - padding.right}
+              cy={padding.top + chartHeight - ((currentPrices.player3 - minY) / (maxY - minY)) * chartHeight}
+              r={hasPlayer3Position ? '6' : '4'}
+              fill="#a855f7"
+              filter={hasPlayer3Position ? 'url(#glow-purple)' : undefined}
+            />
+            <text
+              x={width - padding.right + 8}
+              y={padding.top + chartHeight - ((currentPrices.player3 - minY) / (maxY - minY)) * chartHeight + 3}
+              fill="#a855f7"
+              fontSize={hasPlayer3Position ? '11' : '10'}
+              fontWeight="bold"
+            >
+              {currentPrices.player3.toFixed(0)}¢
             </text>
 
             <circle

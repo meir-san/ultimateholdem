@@ -17,6 +17,7 @@ function App() {
     timer,
     playerCards,
     dealerCards,
+    player3Cards,
     communityCards,
     trueOdds,
     roundResult,
@@ -56,8 +57,8 @@ function App() {
   const shouldAdvanceRef = useRef(false);
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFeesOverlay, setShowFeesOverlay] = useState(false);
-  const [pendingBuy, setPendingBuy] = useState({ player: false, dealer: false, push: false });
-  const buyTimeoutsRef = useRef<{ [key in 'player' | 'dealer' | 'push']?: ReturnType<typeof setTimeout> }>({});
+  const [pendingBuy, setPendingBuy] = useState({ player: false, dealer: false, player3: false, push: false });
+  const buyTimeoutsRef = useRef<{ [key in 'player' | 'dealer' | 'player3' | 'push']?: ReturnType<typeof setTimeout> }>({});
 
   // Initialize game
   useEffect(() => {
@@ -70,9 +71,11 @@ function App() {
 
     const interval = setInterval(() => {
       const state = useGameStore.getState();
-      const hasUserBets = state.myPositions.player.length > 0 || 
-                          state.myPositions.dealer.length > 0 || 
-                          state.myPositions.push.length > 0;
+      const hasUserBets =
+        state.myPositions.player.length > 0 ||
+        state.myPositions.dealer.length > 0 ||
+        state.myPositions.player3.length > 0 ||
+        state.myPositions.push.length > 0;
       const countdownStarted = state.timer < PREDICTION_WINDOW;
       
       if (hasUserBets || countdownStarted) {
@@ -137,8 +140,9 @@ function App() {
     const prev = prevTrueOddsRef.current;
     const playerShift = Math.abs(trueOdds.player - prev.player);
     const dealerShift = Math.abs(trueOdds.dealer - prev.dealer);
+    const player3Shift = Math.abs(trueOdds.player3 - prev.player3);
 
-    if (playerShift > 3 || dealerShift > 3) {
+    if (playerShift > 3 || dealerShift > 3 || player3Shift > 3) {
       rebalanceMarket(prev);
     }
 
@@ -189,7 +193,7 @@ function App() {
   }, [phase]);
 
   const marketLocked = isMarketLocked();
-  const totalPool = pool.player + pool.dealer + pool.push;
+  const totalPool = pool.player + pool.dealer + pool.player3 + pool.push;
   const totalMyBets = getTotalMyBets();
   const betsLocked = timer <= 2 && phase !== PHASES.RESOLUTION;
   const canBet = phase !== PHASES.RESOLUTION && balance >= selectedBetAmount && !marketLocked && !betsLocked;
@@ -202,7 +206,7 @@ function App() {
     };
   }, []);
 
-  const handlePlaceBet = (type: 'player' | 'dealer' | 'push') => {
+  const handlePlaceBet = (type: 'player' | 'dealer' | 'player3' | 'push') => {
     const hasPosition = getMyBetTotal(type) > 0;
     if (!hasPosition && canBet) {
       setPendingBuy((prev) => ({ ...prev, [type]: true }));
@@ -254,8 +258,10 @@ function App() {
             phase={phase}
             playerCards={playerCards}
             dealerCards={dealerCards}
+            player3Cards={player3Cards}
             communityCards={communityCards}
             showDealerCards={phase === PHASES.DEALER_CARDS || phase === PHASES.RESOLUTION}
+            showPlayer3Cards={phase === PHASES.DEALER_CARDS || phase === PHASES.RESOLUTION}
           />
 
           <PhaseTimer
@@ -270,6 +276,7 @@ function App() {
             priceHistory={priceHistory}
             hasPlayerPosition={getMyBetTotal('player') > 0}
             hasDealerPosition={getMyBetTotal('dealer') > 0}
+            hasPlayer3Position={getMyBetTotal('player3') > 0}
             hasPushPosition={getMyBetTotal('push') > 0}
           />
         </div>
@@ -418,6 +425,24 @@ function App() {
                 onSellPosition={() => sellPosition('dealer')}
               />
               <BettingRow
+                type="player3"
+                label="PLAYER 3 WINS"
+                impliedOdds={getImpliedOdds('player3')}
+                pool={pool}
+                canBet={canBet}
+                marketLocked={marketLocked}
+                selectedBetAmount={selectedBetAmount}
+                hasPosition={getMyBetTotal('player3') > 0 && !pendingBuy.player3}
+                isProcessing={pendingBuy.player3}
+                shares={getTotalShares('player3')}
+                amountPaid={getMyBetTotal('player3')}
+                winPayout={getPotentialPayout('player3')}
+                currentValue={getPositionValue('player3')}
+                pnl={getUnrealizedPnL('player3')}
+                onPlaceBet={() => handlePlaceBet('player3')}
+                onSellPosition={() => sellPosition('player3')}
+              />
+              <BettingRow
                 type="push"
                 label="PUSH"
                 impliedOdds={getImpliedOdds('push')}
@@ -463,7 +488,9 @@ function App() {
                               ? 'text-emerald-400'
                               : item.type === 'dealer'
                                 ? 'text-amber-400'
-                                : 'text-slate-400'
+                                : item.type === 'player3'
+                                  ? 'text-purple-400'
+                                  : 'text-slate-400'
                           }
                         >
                           {item.typeLabel}

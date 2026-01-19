@@ -39,21 +39,22 @@ To avoid blocking the UI at phase transitions, we precompute exact odds during t
 
 ## Odds Engine (`src/utils/winProbability.ts`)
 
-Rules are **pure heads-up**:
+Rules are **three-player**:
 
-- 2 hole cards each
+- 2 hole cards each for Player 1, Player 2, Player 3
 - 5 community cards
 - Best 5-card hand wins
-- Ties push
+- Any tie pushes
 - No folding, no qualification rules
+- Odds only consider revealed cards; hidden cards are ignored in probability calculations
 
-Current behavior:
+Current behavior (prototype):
 
-- **Pre-deal**: fixed constant `48 / 48 / 4`
-- **Flop/Turn/River**: exact enumeration across all remaining cards
-- **Pre-flop**: Monte Carlo (full enumeration is too large for a browser)
+- **Pre-deal**: fixed constant `32 / 32 / 32 / 4`
+- **All phases**: odds are computed using **revealed cards only**
+- **Three-player odds**: **Monte Carlo only** (exact enumeration is too heavy in-browser)
 
-Exact enumeration is expensive but deterministic. It runs in a worker to keep the UI responsive.
+This is intentionally a prototype compromise. Production must use server-side exact odds.
 
 ## Worker (`src/workers/oddsWorker.ts`)
 

@@ -8,7 +8,7 @@ import {
   PRE_DEAL_ODDS,
 } from '../config/constants';
 import { shuffle } from './cardUtils';
-import { evaluateHand, determineWinner } from './pokerHands';
+import { evaluateHand, determineWinnerThree } from './pokerHands';
 
 /**
  * Generates all 2-card combinations from deck (for exact enumeration)
@@ -57,6 +57,7 @@ function calculateExactProbabilities(
       return {
         player: (playerWins / total) * 100,
         dealer: (dealerWins / total) * 100,
+        player3: 0,
         push: (pushes / total) * 100,
       };
     }
@@ -87,6 +88,7 @@ function calculateExactProbabilities(
     return {
       player: total ? (playerWins / total) * 100 : 0,
       dealer: total ? (dealerWins / total) * 100 : 0,
+      player3: 0,
       push: total ? (pushes / total) * 100 : 0,
     };
   }
@@ -134,6 +136,7 @@ function calculateExactProbabilities(
   return {
     player: (playerWins / total) * 100,
     dealer: (dealerWins / total) * 100,
+    player3: 0,
     push: (pushes / total) * 100,
   };
 }
@@ -146,44 +149,46 @@ function calculateExactProbabilities(
 export function calculateWinProbabilities(
   playerHoleCards: Card[],
   dealerHoleCards: Card[],
+  player3HoleCards: Card[],
   communityCards: Card[],
   deck: Card[],
   phase: Phase
 ): TrueOdds {
+  // This function is the single source of truth for odds.
+  // It prioritizes exact enumeration whenever it is computationally feasible in-browser.
   // Exact pre-deal odds (deterministic + symmetric)
   if (
     phase === PHASES.PRE_DEAL &&
     playerHoleCards.length === 0 &&
     dealerHoleCards.length === 0 &&
+    player3HoleCards.length === 0 &&
     communityCards.length === 0
   ) {
     return PRE_DEAL_ODDS;
   }
 
-  // Use exact enumeration for flop/turn/river states (community >= 3)
-  if (
-    playerHoleCards.length === 2 &&
-    communityCards.length >= 3
-  ) {
-    return calculateExactProbabilities(playerHoleCards, dealerHoleCards, communityCards, deck);
-  }
+  // Prototype note: 3-player exact enumeration is too heavy for the browser,
+  // so we fall back to Monte Carlo until a server-side odds engine is used.
 
   // Use Monte Carlo for all other cases
   const simulations =
     phase === PHASES.PRE_DEAL &&
     playerHoleCards.length === 0 &&
     dealerHoleCards.length === 0 &&
+    player3HoleCards.length === 0 &&
     communityCards.length === 0
       ? MONTE_CARLO_SIMULATIONS_PRE_DEAL
       : MONTE_CARLO_SIMULATIONS;
   let playerWins = 0;
   let dealerWins = 0;
+  let player3Wins = 0;
   let pushes = 0;
 
   for (let i = 0; i < simulations; i++) {
-    const result = simulateGame(playerHoleCards, dealerHoleCards, communityCards, deck, phase);
+    const result = simulateGame(playerHoleCards, dealerHoleCards, player3HoleCards, communityCards, deck, phase);
     if (result === 'player') playerWins++;
     else if (result === 'dealer') dealerWins++;
+    else if (result === 'player3') player3Wins++;
     else pushes++;
   }
 
@@ -191,6 +196,7 @@ export function calculateWinProbabilities(
   return {
     player: (playerWins / simulations) * 100,
     dealer: (dealerWins / simulations) * 100,
+    player3: (player3Wins / simulations) * 100,
     push: pushOdds,
   };
 }
@@ -201,13 +207,15 @@ export function calculateWinProbabilities(
 function simulateGame(
   playerHoleCards: Card[],
   dealerHoleCards: Card[],
+  player3HoleCards: Card[],
   communityCards: Card[],
   deck: Card[],
   phase: Phase
-): 'player' | 'dealer' | 'push' {
+): 'player' | 'dealer' | 'player3' | 'push' {
   const simDeck = shuffle([...deck]);
   let simPlayerHole = [...playerHoleCards];
   let simDealerHole = [...dealerHoleCards];
+  let simPlayer3Hole = [...player3HoleCards];
   let simCommunity = [...communityCards];
 
   // Deal missing cards if needed
@@ -220,6 +228,12 @@ function simulateGame(
   if (simDealerHole.length < 2) {
     while (simDealerHole.length < 2 && simDeck.length > 0) {
       simDealerHole.push(simDeck.pop()!);
+    }
+  }
+
+  if (simPlayer3Hole.length < 2) {
+    while (simPlayer3Hole.length < 2 && simDeck.length > 0) {
+      simPlayer3Hole.push(simDeck.pop()!);
     }
   }
 
@@ -262,7 +276,6 @@ function simulateGame(
   // Evaluate final hands
   const playerHand = evaluateHand([...simPlayerHole, ...simCommunity]);
   const dealerHand = evaluateHand([...simDealerHole, ...simCommunity]);
-
-  // Compare hands
-  return determineWinner(playerHand, dealerHand);
+  const player3Hand = evaluateHand([...simPlayer3Hole, ...simCommunity]);
+  return determineWinnerThree(playerHand, dealerHand, player3Hand);
 }

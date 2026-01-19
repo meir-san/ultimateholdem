@@ -1,7 +1,7 @@
 import type { Pool } from '../types';
 
 interface BettingRowProps {
-  type: 'player' | 'dealer' | 'push';
+  type: 'player' | 'dealer' | 'player3' | 'push';
   label: string;
   impliedOdds: number;
   pool: Pool;
@@ -51,6 +51,13 @@ export function BettingRow({
       bg: 'bg-amber-500/15',
       btn: 'bg-amber-600 hover:bg-amber-500',
       ring: 'ring-amber-500',
+    },
+    player3: {
+      dot: 'bg-purple-500',
+      text: 'text-purple-400',
+      bg: 'bg-purple-500/15',
+      btn: 'bg-purple-600 hover:bg-purple-500',
+      ring: 'ring-purple-500',
     },
     push: {
       dot: 'bg-slate-400',

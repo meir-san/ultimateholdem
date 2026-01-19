@@ -5,6 +5,7 @@ import { PHASES } from '../config/constants';
 interface GameBoardProps {
   playerCards: Card[];
   dealerCards: Card[];
+  player3Cards: Card[];
   communityCards: Card[];
   phase: string;
   playerFolded: boolean;
@@ -13,6 +14,7 @@ interface GameBoardProps {
 export function GameBoard({
   playerCards,
   dealerCards,
+  player3Cards,
   communityCards,
   phase,
   playerFolded,
@@ -33,7 +35,7 @@ export function GameBoard({
       case PHASES.RIVER:
         return 'River';
       case PHASES.DEALER_CARDS:
-        return 'Player 2 Cards';
+        return 'Player 2 / Player 3 Cards';
       case PHASES.RESOLUTION:
         return 'Resolution';
       default:
@@ -51,10 +53,18 @@ export function GameBoard({
       </div>
 
       <div className="flex flex-col items-center gap-8">
-        {/* Dealer Cards */}
+        {/* Player 2 Cards */}
         <CardRow
           cards={dealerCards}
           label="Player 2"
+          hidden={!showDealerCards}
+          size="md"
+        />
+
+        {/* Player 3 Cards */}
+        <CardRow
+          cards={player3Cards}
+          label="Player 3"
           hidden={!showDealerCards}
           size="md"
         />

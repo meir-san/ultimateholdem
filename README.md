@@ -28,9 +28,9 @@ npm run dev
 
 The goal is **exact, deterministic odds**:
 
-- **Pre-deal** uses a fixed constant: `48 / 48 / 4` (Player 1 / Player 2 / Push).
-- **Flop/Turn/River** uses **exact enumeration** of all remaining cards.
-- **Pre-flop (player cards known, no board)** still uses Monte Carlo due to the massive state space.
+- **Pre-deal** uses a fixed constant: `32 / 32 / 32 / 4` (Player 1 / Player 2 / Player 3 / Push).
+- **All phases** ignore hidden cards; odds only consider **revealed** cards.
+- **Three-player odds** use **Monte Carlo** in the prototype because exact enumeration is too heavy in-browser.
 - Exact enumeration runs in a **Web Worker** and is **precomputed during the 15s prediction window** to avoid UI stalls at phase transitions.
 
 See `docs/ARCHITECTURE.md` for the full flow and performance notes.

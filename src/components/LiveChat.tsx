@@ -36,12 +36,14 @@ const MESSAGES: Record<ChatMessage['tone'], string[]> = {
     'I like the Player 1 price here.',
     'Loading up on Player 1.',
     'This feels mispriced toward Player 2.',
+    'Player 3 looks underrated.',
   ],
   bearish: [
     'Player 2 feels strong here.',
     'Player 1 looks overpriced.',
     'Taking the other side.',
     'Hedging with Player 2.',
+    'Player 3 feels live.',
   ],
   system: [
     '📊 Market synchronized.',

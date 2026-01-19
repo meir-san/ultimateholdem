@@ -23,8 +23,9 @@ export const MONTE_CARLO_SIMULATIONS_PRE_DEAL = 20000;
 
 // Exact pre-deal odds for heads-up Hold'em (win/tie/win symmetric)
 export const PRE_DEAL_ODDS = {
-  player: 48,
-  dealer: 48,
+  player: 32,
+  dealer: 32,
+  player3: 32,
   push: 4,
 } as const;
 
@@ -48,9 +49,10 @@ export const CROWD_BET_DELAY_MAX = 2000; // milliseconds
 
 // Initial odds (roughly equal, slight edge to dealer)
 export const INITIAL_ODDS = {
-  player: 45,
-  dealer: 48,
-  push: 7,
+  player: 32,
+  dealer: 32,
+  player3: 32,
+  push: 4,
 } as const;
 
 // Price history

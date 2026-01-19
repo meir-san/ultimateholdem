@@ -218,3 +218,30 @@ export function determineWinner(playerHand: EvaluatedHand, dealerHand: Evaluated
   if (comparison < 0) return 'dealer';
   return 'push';
 }
+
+export function determineWinnerThree(
+  playerHand: EvaluatedHand,
+  dealerHand: EvaluatedHand,
+  player3Hand: EvaluatedHand
+): 'player' | 'dealer' | 'player3' | 'push' {
+  const playerVsDealer = compareHands(playerHand, dealerHand);
+  const playerVsPlayer3 = compareHands(playerHand, player3Hand);
+  const dealerVsPlayer3 = compareHands(dealerHand, player3Hand);
+
+  if (playerVsDealer >= 0 && playerVsPlayer3 >= 0) {
+    if (playerVsDealer === 0 || playerVsPlayer3 === 0) return 'push';
+    return 'player';
+  }
+
+  if (playerVsDealer <= 0 && dealerVsPlayer3 >= 0) {
+    if (playerVsDealer === 0 || dealerVsPlayer3 === 0) return 'push';
+    return 'dealer';
+  }
+
+  if (playerVsPlayer3 <= 0 && dealerVsPlayer3 <= 0) {
+    if (playerVsPlayer3 === 0 || dealerVsPlayer3 === 0) return 'push';
+    return 'player3';
+  }
+
+  return 'push';
+}

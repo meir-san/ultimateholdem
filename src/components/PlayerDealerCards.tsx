@@ -282,16 +282,20 @@ interface PlayerDealerCardsProps {
   phase: Phase;
   playerCards: Card[];
   dealerCards: Card[];
+  player3Cards: Card[];
   communityCards: Card[];
   showDealerCards: boolean;
+  showPlayer3Cards: boolean;
 }
 
 export function PlayerDealerCards({
   phase,
   playerCards,
   dealerCards,
+  player3Cards,
   communityCards,
   showDealerCards,
+  showPlayer3Cards,
 }: PlayerDealerCardsProps) {
   const isPreDeal = phase === PHASES.PRE_DEAL;
   const isPlayerCards = phase === PHASES.PLAYER_CARDS;
@@ -310,12 +314,19 @@ export function PlayerDealerCards({
     if (isDealerCards || isResolution) return { label: 'ACTIVE', color: 'bg-amber-500/20 text-amber-400' };
     return { label: 'HOLD', color: 'bg-slate-700 text-slate-400' };
   };
+  
+  const getPlayer3Status = () => {
+    if (isPreDeal || isPlayerCards || isCommunityCards) return { label: 'WAITING', color: 'bg-slate-700 text-slate-400' };
+    if (isDealerCards || isResolution) return { label: 'ACTIVE', color: 'bg-purple-500/20 text-purple-400' };
+    return { label: 'HOLD', color: 'bg-slate-700 text-slate-400' };
+  };
 
   const playerStatus = getPlayerStatus();
   const dealerStatus = getDealerStatus();
+  const player3Status = getPlayer3Status();
 
   return (
-    <div className="grid grid-cols-2 gap-4 mb-3">
+    <div className="grid grid-cols-3 gap-4 mb-3">
       {/* Player Cards */}
       <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
         <div className="flex items-center justify-between mb-3">
@@ -353,15 +364,15 @@ export function PlayerDealerCards({
         </div>
       </div>
 
-      {/* Dealer Cards */}
+      {/* Player 2 Cards */}
       <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-amber-500 rounded-full" />
             <span className="font-semibold text-slate-300">PLAYER 2</span>
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${dealerStatus.color}`}>
-            {dealerStatus.label}
+          <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${player3Status.color}`}>
+            {player3Status.label}
           </span>
         </div>
 
@@ -381,7 +392,7 @@ export function PlayerDealerCards({
           )}
         </div>
 
-        {/* Dealer Hand Description */}
+        {/* Player 2 Hand Description */}
         <div className="text-center text-sm font-medium text-amber-400">
           {showDealerCards && dealerCards.length > 0
             ? isResolution
@@ -393,8 +404,48 @@ export function PlayerDealerCards({
         </div>
       </div>
 
+      {/* Player 3 Cards */}
+      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-purple-500 rounded-full" />
+            <span className="font-semibold text-slate-300">PLAYER 3</span>
+          </div>
+          <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${dealerStatus.color}`}>
+            {dealerStatus.label}
+          </span>
+        </div>
+
+        <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
+          {isPreDeal || (!isDealerCards && !isResolution) || player3Cards.length === 0 ? (
+            <>
+              <CardDisplay card={null} />
+              <CardDisplay card={null} />
+            </>
+          ) : (
+            <>
+              {player3Cards.map((card, i) => (
+                <CardDisplay key={i} card={card} />
+              ))}
+              {player3Cards.length === 1 && <CardDisplay card={null} />}
+            </>
+          )}
+        </div>
+
+        {/* Player 3 Hand Description */}
+        <div className="text-center text-sm font-medium text-purple-400">
+          {showPlayer3Cards && player3Cards.length > 0
+            ? isResolution
+              ? getFullHandDescription(player3Cards, communityCards)
+              : getHoleCardDescription(player3Cards, communityCards)
+            : player3Cards.length > 0
+              ? 'Hidden'
+              : '—'}
+        </div>
+      </div>
+
       {/* Community Cards - Show slots, labels only after cards are dealt */}
-      <div className="col-span-2 bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
+      <div className="col-span-3 bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
         <div className="flex gap-2 justify-center items-end">
           {/* Flop - first 3 cards with single label centered above */}
           <div className="flex flex-col items-center gap-1">

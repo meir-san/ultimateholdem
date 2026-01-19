@@ -11,6 +11,8 @@ export function ActivityFeed({ items }: ActivityFeedProps) {
         return 'text-emerald-400';
       case 'dealer':
         return 'text-amber-400';
+      case 'player3':
+        return 'text-purple-400';
       case 'push':
         return 'text-slate-300';
       case 'rebalance':

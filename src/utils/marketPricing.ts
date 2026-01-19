@@ -4,17 +4,17 @@ import { PLATFORM_FEE } from '../config/constants';
 /**
  * Calculates implied probability from pool distribution
  */
-export function getImpliedOdds(type: 'player' | 'dealer' | 'push', pool: Pool): number {
-  const totalPool = pool.player + pool.dealer + pool.push;
-  if (totalPool === 0) return 33.33;
+export function getImpliedOdds(type: 'player' | 'dealer' | 'player3' | 'push', pool: Pool): number {
+  const totalPool = pool.player + pool.dealer + pool.player3 + pool.push;
+  if (totalPool === 0) return 25;
   return (pool[type] / totalPool) * 100;
 }
 
 /**
  * Calculates pool odds (what you'd get if you won)
  */
-export function getPoolOdds(type: 'player' | 'dealer' | 'push', pool: Pool): number {
-  const totalPool = pool.player + pool.dealer + pool.push;
+export function getPoolOdds(type: 'player' | 'dealer' | 'player3' | 'push', pool: Pool): number {
+  const totalPool = pool.player + pool.dealer + pool.player3 + pool.push;
   if (totalPool === 0 || pool[type] === 0) return 0;
   return ((totalPool * (1 - PLATFORM_FEE)) / pool[type]) * 100;
 }

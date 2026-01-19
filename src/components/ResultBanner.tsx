@@ -33,6 +33,12 @@ export function ResultBanner({
       bg: 'bg-amber-500/10',
       border: 'border-amber-500/30',
     },
+    player3: {
+      text: 'PLAYER 3 WINS',
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/30',
+    },
     push: {
       text: 'PUSH',
       color: 'text-slate-300',

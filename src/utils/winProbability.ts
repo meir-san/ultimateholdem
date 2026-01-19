@@ -77,6 +77,11 @@ export function calculateWinProbabilities(
   }
 
   // Use Monte Carlo for all other cases
+  const isSymmetricPreDeal =
+    phase === PHASES.PRE_DEAL &&
+    playerHoleCards.length === 0 &&
+    dealerHoleCards.length === 0 &&
+    communityCards.length === 0;
   const simulations =
     phase === PHASES.PRE_DEAL &&
     playerHoleCards.length === 0 &&
@@ -95,10 +100,19 @@ export function calculateWinProbabilities(
     else pushes++;
   }
 
+  const pushOdds = (pushes / simulations) * 100;
+  if (isSymmetricPreDeal) {
+    const winOdds = (100 - pushOdds) / 2;
+    return {
+      player: winOdds,
+      dealer: winOdds,
+      push: pushOdds,
+    };
+  }
   return {
     player: (playerWins / simulations) * 100,
     dealer: (dealerWins / simulations) * 100,
-    push: (pushes / simulations) * 100,
+    push: pushOdds,
   };
 }
 

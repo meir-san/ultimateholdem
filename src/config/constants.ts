@@ -19,7 +19,7 @@ export const PLATFORM_FEE = 0.035; // 3.5% rake
 export const INITIAL_BALANCE = 100;
 export const INITIAL_POOL_BASE = 1000;
 export const MONTE_CARLO_SIMULATIONS = 500;
-export const MONTE_CARLO_SIMULATIONS_PRE_DEAL = 5000;
+export const MONTE_CARLO_SIMULATIONS_PRE_DEAL = 20000;
 
 // Betting amounts
 export const QUICK_BET_AMOUNTS = [5, 10, 25, 50];

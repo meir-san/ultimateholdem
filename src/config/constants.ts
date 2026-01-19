@@ -21,6 +21,13 @@ export const INITIAL_POOL_BASE = 1000;
 export const MONTE_CARLO_SIMULATIONS = 500;
 export const MONTE_CARLO_SIMULATIONS_PRE_DEAL = 20000;
 
+// Exact pre-deal odds for heads-up Hold'em (win/tie/win symmetric)
+export const PRE_DEAL_ODDS = {
+  player: 48,
+  dealer: 48,
+  push: 4,
+} as const;
+
 // Betting amounts
 export const QUICK_BET_AMOUNTS = [5, 10, 25, 50];
 export const MAX_BET_AMOUNT = 100;

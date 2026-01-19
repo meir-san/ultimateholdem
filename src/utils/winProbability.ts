@@ -1,7 +1,12 @@
 import type { Card } from '../types';
 import type { TrueOdds } from '../types';
 import type { Phase } from '../config/constants';
-import { MONTE_CARLO_SIMULATIONS, MONTE_CARLO_SIMULATIONS_PRE_DEAL, PHASES } from '../config/constants';
+import {
+  MONTE_CARLO_SIMULATIONS,
+  MONTE_CARLO_SIMULATIONS_PRE_DEAL,
+  PHASES,
+  PRE_DEAL_ODDS,
+} from '../config/constants';
 import { shuffle } from './cardUtils';
 import { evaluateHand, determineWinner } from './pokerHands';
 
@@ -24,6 +29,7 @@ function generateTwoCardCombinations(deck: Card[]): [Card, Card][] {
  */
 function calculateExactProbabilities(
   playerHoleCards: Card[],
+  dealerHoleCards: Card[],
   communityCards: Card[],
   deck: Card[]
 ): TrueOdds {
@@ -31,28 +37,90 @@ function calculateExactProbabilities(
   let dealerWins = 0;
   let pushes = 0;
 
-  // Generate all possible dealer hole card combinations
-  const dealerCombinations = generateTwoCardCombinations(deck);
-  const totalCombinations = dealerCombinations.length;
+  const remainingCommunityCount = 5 - communityCards.length;
 
-  for (const [dCard1, dCard2] of dealerCombinations) {
-    const dealerHoleCards = [dCard1, dCard2];
-
-    // Evaluate final hands
-    const playerHand = evaluateHand([...playerHoleCards, ...communityCards]);
-    const dealerHand = evaluateHand([...dealerHoleCards, ...communityCards]);
-
-    // Compare hands
+  // Helper to compare a single fully-specified outcome
+  const tally = (finalDealer: Card[], finalCommunity: Card[]) => {
+    const playerHand = evaluateHand([...playerHoleCards, ...finalCommunity]);
+    const dealerHand = evaluateHand([...finalDealer, ...finalCommunity]);
     const result = determineWinner(playerHand, dealerHand);
     if (result === 'player') playerWins++;
     else if (result === 'dealer') dealerWins++;
     else pushes++;
+  };
+
+  // Dealer already known
+  if (dealerHoleCards.length === 2) {
+    let total = 0;
+    if (remainingCommunityCount === 0) {
+      total = 1;
+      tally(dealerHoleCards, communityCards);
+      return {
+        player: (playerWins / total) * 100,
+        dealer: (dealerWins / total) * 100,
+        push: (pushes / total) * 100,
+      };
+    }
+
+    const combos = generateTwoCardCombinations(deck);
+    if (remainingCommunityCount === 1) {
+      for (const card of deck) {
+        total++;
+        tally(dealerHoleCards, [...communityCards, card]);
+      }
+    } else if (remainingCommunityCount === 2) {
+      for (const [c1, c2] of combos) {
+        total++;
+        tally(dealerHoleCards, [...communityCards, c1, c2]);
+      }
+    } else {
+      // Remaining community count too large for exact enumeration here
+      total = 0;
+    }
+
+    return {
+      player: total ? (playerWins / total) * 100 : 0,
+      dealer: total ? (dealerWins / total) * 100 : 0,
+      push: total ? (pushes / total) * 100 : 0,
+    };
+  }
+
+  // Dealer unknown: enumerate dealer hole cards and remaining community cards
+  const dealerCombinations = generateTwoCardCombinations(deck);
+  let total = 0;
+
+  for (const [dCard1, dCard2] of dealerCombinations) {
+    const dealerHole = [dCard1, dCard2];
+    if (remainingCommunityCount === 0) {
+      total++;
+      tally(dealerHole, communityCards);
+      continue;
+    }
+
+    // Build remaining deck excluding dealer hole cards
+    const remainingDeck = deck.filter(
+      (card) => card !== dCard1 && card !== dCard2
+    );
+
+    if (remainingCommunityCount === 1) {
+      for (const card of remainingDeck) {
+        total++;
+        tally(dealerHole, [...communityCards, card]);
+      }
+    } else if (remainingCommunityCount === 2) {
+      for (let i = 0; i < remainingDeck.length - 1; i++) {
+        for (let j = i + 1; j < remainingDeck.length; j++) {
+          total++;
+          tally(dealerHole, [...communityCards, remainingDeck[i], remainingDeck[j]]);
+        }
+      }
+    }
   }
 
   return {
-    player: (playerWins / totalCombinations) * 100,
-    dealer: (dealerWins / totalCombinations) * 100,
-    push: (pushes / totalCombinations) * 100,
+    player: (playerWins / total) * 100,
+    dealer: (dealerWins / total) * 100,
+    push: (pushes / total) * 100,
   };
 }
 
@@ -68,20 +136,25 @@ export function calculateWinProbabilities(
   deck: Card[],
   phase: Phase
 ): TrueOdds {
-  // Use exact enumeration for RIVER phase when only dealer cards are unknown
-  if (phase === PHASES.RIVER &&
-      playerHoleCards.length === 2 &&
-      dealerHoleCards.length === 0 &&
-      communityCards.length === 5) {
-    return calculateExactProbabilities(playerHoleCards, communityCards, deck);
-  }
-
-  // Use Monte Carlo for all other cases
-  const isSymmetricPreDeal =
+  // Exact pre-deal odds (deterministic + symmetric)
+  if (
     phase === PHASES.PRE_DEAL &&
     playerHoleCards.length === 0 &&
     dealerHoleCards.length === 0 &&
-    communityCards.length === 0;
+    communityCards.length === 0
+  ) {
+    return PRE_DEAL_ODDS;
+  }
+
+  // Use exact enumeration for flop/turn/river states (community >= 3)
+  if (
+    playerHoleCards.length === 2 &&
+    communityCards.length >= 3
+  ) {
+    return calculateExactProbabilities(playerHoleCards, dealerHoleCards, communityCards, deck);
+  }
+
+  // Use Monte Carlo for all other cases
   const simulations =
     phase === PHASES.PRE_DEAL &&
     playerHoleCards.length === 0 &&
@@ -101,14 +174,6 @@ export function calculateWinProbabilities(
   }
 
   const pushOdds = (pushes / simulations) * 100;
-  if (isSymmetricPreDeal) {
-    const winOdds = (100 - pushOdds) / 2;
-    return {
-      player: winOdds,
-      dealer: winOdds,
-      push: pushOdds,
-    };
-  }
   return {
     player: (playerWins / simulations) * 100,
     dealer: (dealerWins / simulations) * 100,

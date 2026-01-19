@@ -56,8 +56,8 @@ function App() {
   const shouldAdvanceRef = useRef(false);
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFeesOverlay, setShowFeesOverlay] = useState(false);
-  const [pendingOutline, setPendingOutline] = useState({ player: false, dealer: false, push: false });
-  const outlineTimeoutsRef = useRef<{ [key in 'player' | 'dealer' | 'push']?: ReturnType<typeof setTimeout> }>({});
+  const [pendingBuy, setPendingBuy] = useState({ player: false, dealer: false, push: false });
+  const buyTimeoutsRef = useRef<{ [key in 'player' | 'dealer' | 'push']?: ReturnType<typeof setTimeout> }>({});
 
   // Initialize game
   useEffect(() => {
@@ -196,7 +196,7 @@ function App() {
 
   useEffect(() => {
     return () => {
-      Object.values(outlineTimeoutsRef.current).forEach((timeout) => {
+      Object.values(buyTimeoutsRef.current).forEach((timeout) => {
         if (timeout) clearTimeout(timeout);
       });
     };
@@ -205,12 +205,12 @@ function App() {
   const handlePlaceBet = (type: 'player' | 'dealer' | 'push') => {
     const hasPosition = getMyBetTotal(type) > 0;
     if (!hasPosition && canBet) {
-      setPendingOutline((prev) => ({ ...prev, [type]: true }));
-      if (outlineTimeoutsRef.current[type]) {
-        clearTimeout(outlineTimeoutsRef.current[type]);
+      setPendingBuy((prev) => ({ ...prev, [type]: true }));
+      if (buyTimeoutsRef.current[type]) {
+        clearTimeout(buyTimeoutsRef.current[type]);
       }
-      outlineTimeoutsRef.current[type] = setTimeout(() => {
-        setPendingOutline((prev) => ({ ...prev, [type]: false }));
+      buyTimeoutsRef.current[type] = setTimeout(() => {
+        setPendingBuy((prev) => ({ ...prev, [type]: false }));
       }, 1000);
     }
     placeBet(type);
@@ -389,8 +389,8 @@ function App() {
                 canBet={canBet}
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
-                hasPosition={getMyBetTotal('player') > 0}
-                showOutline={getMyBetTotal('player') > 0 && !pendingOutline.player}
+                hasPosition={getMyBetTotal('player') > 0 && !pendingBuy.player}
+                isProcessing={pendingBuy.player}
                 shares={getTotalShares('player')}
                 amountPaid={getMyBetTotal('player')}
                 winPayout={getPotentialPayout('player')}
@@ -407,8 +407,8 @@ function App() {
                 canBet={canBet}
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
-                hasPosition={getMyBetTotal('dealer') > 0}
-                showOutline={getMyBetTotal('dealer') > 0 && !pendingOutline.dealer}
+                hasPosition={getMyBetTotal('dealer') > 0 && !pendingBuy.dealer}
+                isProcessing={pendingBuy.dealer}
                 shares={getTotalShares('dealer')}
                 amountPaid={getMyBetTotal('dealer')}
                 winPayout={getPotentialPayout('dealer')}
@@ -425,8 +425,8 @@ function App() {
                 canBet={canBet}
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
-                hasPosition={getMyBetTotal('push') > 0}
-                showOutline={getMyBetTotal('push') > 0 && !pendingOutline.push}
+                hasPosition={getMyBetTotal('push') > 0 && !pendingBuy.push}
+                isProcessing={pendingBuy.push}
                 shares={getTotalShares('push')}
                 amountPaid={getMyBetTotal('push')}
                 winPayout={getPotentialPayout('push')}

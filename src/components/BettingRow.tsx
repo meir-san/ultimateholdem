@@ -9,7 +9,7 @@ interface BettingRowProps {
   marketLocked: boolean;
   selectedBetAmount: number;
   hasPosition: boolean;
-  showOutline?: boolean;
+  isProcessing?: boolean;
   shares: number;
   amountPaid: number;
   winPayout: number;
@@ -28,7 +28,7 @@ export function BettingRow({
   marketLocked,
   selectedBetAmount,
   hasPosition,
-  showOutline,
+  isProcessing,
   shares,
   amountPaid,
   winPayout,
@@ -62,7 +62,8 @@ export function BettingRow({
   };
 
   const c = colors[type];
-  const outline = showOutline ?? hasPosition;
+  const outline = hasPosition;
+  const canPlaceBet = canBet && !isProcessing;
 
   return (
     <div
@@ -94,14 +95,14 @@ export function BettingRow({
         {/* Buy Button */}
         <button
           onClick={onPlaceBet}
-          disabled={!canBet}
-          aria-disabled={!canBet}
+          disabled={!canPlaceBet}
+          aria-disabled={!canPlaceBet}
           aria-label={marketLocked ? 'Market locked' : `Buy $${selectedBetAmount} on ${label} at ${impliedOdds.toFixed(1)} cents`}
           className={`
             px-5 py-2.5 rounded-lg text-sm font-bold transition-all whitespace-nowrap
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900
             ${
-              canBet
+              canPlaceBet
                 ? `${c.btn} text-white focus:ring-current`
                 : marketLocked
                   ? 'bg-purple-900/50 text-purple-400 cursor-not-allowed focus:ring-purple-600'
@@ -109,7 +110,7 @@ export function BettingRow({
             }
           `}
         >
-          {marketLocked ? '🔒 LOCKED' : `BUY $${selectedBetAmount}`}
+          {marketLocked ? '🔒 LOCKED' : isProcessing ? '⏳ PROCESSING' : `BUY $${selectedBetAmount}`}
         </button>
       </div>
 

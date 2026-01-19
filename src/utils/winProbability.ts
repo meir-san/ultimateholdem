@@ -4,7 +4,6 @@ import type { Phase } from '../config/constants';
 import { MONTE_CARLO_SIMULATIONS, PHASES } from '../config/constants';
 import { shuffle } from './cardUtils';
 import { evaluateHand, determineWinner } from './pokerHands';
-import { shouldRaise4x, shouldRaise2x, shouldRaise1x } from './uthStrategy';
 
 /**
  * Generates all 2-card combinations from deck (for exact enumeration)
@@ -39,41 +38,9 @@ function calculateExactProbabilities(
   for (const [dCard1, dCard2] of dealerCombinations) {
     const dealerHoleCards = [dCard1, dCard2];
 
-    // Simulate player decisions
-    let playerFolded = false;
-
-    // Pre-flop decision
-    let playerRaisedPreflop = shouldRaise4x(playerHoleCards);
-
-    // Post-flop decision (if didn't raise pre-flop)
-    let playerRaisedPostflop = false;
-    if (!playerRaisedPreflop && communityCards.length >= 3) {
-      playerRaisedPostflop = shouldRaise2x(playerHoleCards, communityCards.slice(0, 3));
-    }
-
-    // Turn/river decision (if checked twice)
-    if (!playerRaisedPreflop && !playerRaisedPostflop && communityCards.length >= 5) {
-      if (!shouldRaise1x(playerHoleCards, communityCards)) {
-        playerFolded = true;
-      }
-    }
-
-    // If player folded, dealer wins
-    if (playerFolded) {
-      dealerWins++;
-      continue;
-    }
-
     // Evaluate final hands
     const playerHand = evaluateHand([...playerHoleCards, ...communityCards]);
     const dealerHand = evaluateHand([...dealerHoleCards, ...communityCards]);
-
-    // Check dealer qualification (needs pair or better)
-    if (dealerHand.rank < 2) {
-      // Dealer doesn't qualify - player wins
-      playerWins++;
-      continue;
-    }
 
     // Compare hands
     const result = determineWinner(playerHand, dealerHand);
@@ -192,46 +159,9 @@ function simulateGame(
     // Community cards are already complete, no need to deal more
   }
 
-  // Simulate player decisions
-  let playerRaisedPreflop = false;
-  let playerRaisedPostflop = false;
-  let playerFolded = false;
-
-  // Pre-flop decision
-  if (shouldRaise4x(simPlayerHole)) {
-    playerRaisedPreflop = true;
-  }
-
-  // Post-flop decision (if didn't raise pre-flop)
-  if (!playerRaisedPreflop && simCommunity.length >= 3) {
-    if (shouldRaise2x(simPlayerHole, simCommunity.slice(0, 3))) {
-      playerRaisedPostflop = true;
-    }
-  }
-
-  // Turn/river decision (if checked twice)
-  if (!playerRaisedPreflop && !playerRaisedPostflop && simCommunity.length >= 5) {
-    if (!shouldRaise1x(simPlayerHole, simCommunity)) {
-      playerFolded = true;
-    }
-  }
-
-  // If player folded, dealer wins
-  if (playerFolded) {
-    return 'dealer';
-  }
-
   // Evaluate final hands
   const playerHand = evaluateHand([...simPlayerHole, ...simCommunity]);
   const dealerHand = evaluateHand([...simDealerHole, ...simCommunity]);
-
-  // Check dealer qualification (needs pair or better)
-  const dealerRank = dealerHand.rank;
-  if (dealerRank < 2) {
-    // Dealer doesn't qualify - player wins (ante pushes, play pays 1:1)
-    // For simplicity in prediction market, we'll count this as player win
-    return 'player';
-  }
 
   // Compare hands
   return determineWinner(playerHand, dealerHand);

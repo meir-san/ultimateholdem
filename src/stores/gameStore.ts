@@ -17,6 +17,7 @@ interface GameStore extends GameState {
   setTimer: (time: number) => void;
   decrementTimer: () => void;
   simulateCrowdBet: () => void;
+  toggleReveal: (player: 'player1' | 'player2' | 'player3') => void;
   rebalanceMarket: (prevTrueOdds: { player1: number; player2: number; player3: number; push: number }) => void;
   addActivityFeedItem: (item: Omit<ActivityFeedItem, 'id'>) => void;
   updatePriceHistory: () => void;
@@ -87,12 +88,63 @@ const computeOddsAsync = (
   });
 };
 
-const getChosenHoleCards = (state: GameState) => {
+const getRevealedHoleCards = (state: GameState) => {
   return {
-    player1: state.chosenPlayer === 'player1' ? state.player1Cards : [],
-    player2: state.chosenPlayer === 'player2' ? state.player2Cards : [],
-    player3: state.chosenPlayer === 'player3' ? state.player3Cards : [],
+    player1: state.revealedPlayers.player1 ? state.player1Cards : [],
+    player2: state.revealedPlayers.player2 ? state.player2Cards : [],
+    player3: state.revealedPlayers.player3 ? state.player3Cards : [],
   };
+};
+
+const addUniqueCards = (deck: Card[], cards: Card[]) => {
+  const existing = new Set(deck.map(cardKey));
+  for (const card of cards) {
+    const key = cardKey(card);
+    if (!existing.has(key)) {
+      deck.push(card);
+      existing.add(key);
+    }
+  }
+};
+
+const buildOddsDeck = (state: GameState) => {
+  const deck = [...state.deck];
+
+  if (!state.revealedPlayers.player1 && state.player1Cards.length === 2) {
+    addUniqueCards(deck, state.player1Cards);
+  }
+  if (!state.revealedPlayers.player2 && state.player2Cards.length === 2) {
+    addUniqueCards(deck, state.player2Cards);
+  }
+  if (!state.revealedPlayers.player3 && state.player3Cards.length === 2) {
+    addUniqueCards(deck, state.player3Cards);
+  }
+
+  if (state.phase === PHASES.PLAYER_CARDS && state.pendingFlop) {
+    addUniqueCards(deck, state.pendingFlop);
+  }
+  if (state.phase === PHASES.FLOP && state.pendingTurn) {
+    addUniqueCards(deck, [state.pendingTurn]);
+  }
+  if (state.phase === PHASES.TURN && state.pendingRiver) {
+    addUniqueCards(deck, [state.pendingRiver]);
+  }
+
+  return deck;
+};
+
+const buildNextOddsDeck = (deck: Card[], state: GameState) => {
+  const nextDeck = [...deck];
+  if (!state.revealedPlayers.player1 && state.player1Cards.length === 2) {
+    addUniqueCards(nextDeck, state.player1Cards);
+  }
+  if (!state.revealedPlayers.player2 && state.player2Cards.length === 2) {
+    addUniqueCards(nextDeck, state.player2Cards);
+  }
+  if (!state.revealedPlayers.player3 && state.player3Cards.length === 2) {
+    addUniqueCards(nextDeck, state.player3Cards);
+  }
+  return nextDeck;
 };
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -129,6 +181,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   priceHistory: [],
   showReferences: true,
   chosenPlayer: 'player1',
+  revealedPlayers: { player1: true, player2: false, player3: false },
+  firstBuyOutcome: null,
   roundHistory: [],
 
   startNewRound: () => {
@@ -168,6 +222,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       activityFeed: [],
       priceHistory: [],
       chosenPlayer: 'player1',
+      revealedPlayers: { player1: true, player2: false, player3: false },
+      firstBuyOutcome: null,
       pool: initialPool,
       crowdBets: initialPool,
       // Don't reset roundHistory - keep accumulating
@@ -193,7 +249,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const finalPlayer2Cards = [dCard1, dCard2];
       const finalPlayer3Cards = [p3Card1, p3Card2];
       const preflopDeck = [...newDeck];
-      const revealed = getChosenHoleCards({
+      const revealed = getRevealedHoleCards({
+        ...state,
+        player1Cards: finalPlayer1Cards,
+        player2Cards: finalPlayer2Cards,
+        player3Cards: finalPlayer3Cards,
+      });
+      const oddsDeck = buildNextOddsDeck(preflopDeck, {
         ...state,
         player1Cards: finalPlayer1Cards,
         player2Cards: finalPlayer2Cards,
@@ -204,7 +266,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         revealed.player2,
         revealed.player3,
         [],
-        preflopDeck,
+        oddsDeck,
         PHASES.PLAYER_CARDS
       );
 
@@ -236,7 +298,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingOddsKey: pendingKey,
       });
 
-      computeOddsAsync(revealed.player1, revealed.player2, revealed.player3, pendingFlop, newDeck, PHASES.FLOP).then((odds) => {
+      const nextDeck = buildNextOddsDeck(newDeck, {
+        ...state,
+        player1Cards: finalPlayer1Cards,
+        player2Cards: finalPlayer2Cards,
+        player3Cards: finalPlayer3Cards,
+      });
+      computeOddsAsync(revealed.player1, revealed.player2, revealed.player3, pendingFlop, nextDeck, PHASES.FLOP).then((odds) => {
         const current = get();
         if (current.pendingOddsPhase === PHASES.FLOP && current.pendingOddsKey === pendingKey) {
           set({ pendingOdds: odds });
@@ -254,11 +322,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // Phase 3: FLOP - Deal all three flop cards simultaneously
       const newDeck = [...deck];
       const flop = state.pendingFlop ?? [newDeck.pop()!, newDeck.pop()!, newDeck.pop()!];
-      const revealed = getChosenHoleCards(state);
+      const revealed = getRevealedHoleCards(state);
+      const oddsDeck = buildNextOddsDeck(newDeck, state);
       const newOdds =
         state.pendingOddsPhase === PHASES.FLOP && state.pendingOdds
           ? state.pendingOdds
-          : calculateWinProbabilities(revealed.player1, revealed.player2, revealed.player3, flop, newDeck, PHASES.FLOP);
+          : calculateWinProbabilities(
+              revealed.player1,
+              revealed.player2,
+              revealed.player3,
+              flop,
+              oddsDeck,
+              PHASES.FLOP
+            );
       
       // Check if outcome is certain (100%)
       const isCertain =
@@ -287,7 +363,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingOddsPhase: PHASES.TURN,
         pendingOddsKey: pendingTurnKey,
       });
-      computeOddsAsync(revealed.player1, revealed.player2, revealed.player3, [...flop, turn], newDeck, PHASES.TURN).then((odds) => {
+      const nextDeck = buildNextOddsDeck(newDeck, state);
+      computeOddsAsync(revealed.player1, revealed.player2, revealed.player3, [...flop, turn], nextDeck, PHASES.TURN).then((odds) => {
         const current = get();
         if (current.pendingOddsPhase === PHASES.TURN && current.pendingOddsKey === pendingTurnKey) {
           set({ pendingOdds: odds });
@@ -305,7 +382,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // Phase 4: TURN - Deal turn card
       const newDeck = [...deck];
       const turn = state.pendingTurn ?? newDeck.pop()!;
-      const revealed = getChosenHoleCards(state);
+      const revealed = getRevealedHoleCards(state);
+      const oddsDeck = buildNextOddsDeck(newDeck, state);
       const newOdds =
         state.pendingOddsPhase === PHASES.TURN && state.pendingOdds
           ? state.pendingOdds
@@ -314,7 +392,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
               revealed.player2,
               revealed.player3,
               [...communityCards, turn],
-              newDeck,
+              oddsDeck,
               PHASES.TURN
             );
       
@@ -345,12 +423,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingOddsPhase: PHASES.RIVER,
         pendingOddsKey: pendingRiverKey,
       });
+      const nextDeck = buildNextOddsDeck(newDeck, state);
       computeOddsAsync(
         revealed.player1,
         revealed.player2,
         revealed.player3,
         [...communityCards, turn, river],
-        newDeck,
+        nextDeck,
         PHASES.RIVER
       ).then((odds) => {
         const current = get();
@@ -372,7 +451,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const river = state.pendingRiver ?? newDeck.pop()!;
       const newCommunity = [...communityCards, river];
 
-      const revealed = getChosenHoleCards(state);
+      const revealed = getRevealedHoleCards(state);
+      const oddsDeck = buildNextOddsDeck(newDeck, state);
       const newOdds =
         state.pendingOddsPhase === PHASES.RIVER && state.pendingOdds
           ? state.pendingOdds
@@ -381,7 +461,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
               revealed.player2,
               revealed.player3,
               newCommunity,
-              newDeck,
+              oddsDeck,
               PHASES.RIVER
             );
       
@@ -472,6 +552,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
       shares,
       entryOdds,
     };
+
+    const isFirstBuy = state.firstBuyOutcome === null && type !== 'push';
+    let nextFirstBuy = state.firstBuyOutcome;
+    let nextChosenPlayer = state.chosenPlayer;
+    let nextRevealed = state.revealedPlayers;
+
+    if (isFirstBuy) {
+      nextFirstBuy = type;
+      nextChosenPlayer = type;
+      nextRevealed = { player1: false, player2: false, player3: false };
+      nextRevealed[type] = true;
+    }
     
     set({
       balance: state.balance - amount,
@@ -480,12 +572,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...state.myPositions,
         [type]: [...state.myPositions[type], newPosition],
       },
-      chosenPlayer: type === 'push' ? state.chosenPlayer : type,
+      chosenPlayer: nextChosenPlayer,
+      revealedPlayers: nextRevealed,
+      firstBuyOutcome: nextFirstBuy,
       pool: {
         ...state.pool,
         [type]: state.pool[type] + (amount * (1 - PLATFORM_FEE)),
       },
     });
+
+    if (isFirstBuy) {
+      const updated = get();
+      const revealed = getRevealedHoleCards(updated);
+      const oddsDeck = buildOddsDeck(updated);
+      const newOdds = calculateWinProbabilities(
+        revealed.player1,
+        revealed.player2,
+        revealed.player3,
+        updated.communityCards,
+        oddsDeck,
+        updated.phase
+      );
+      set({
+        trueOdds: newOdds,
+        history: [...updated.history, newOdds],
+        pendingOdds: null,
+        pendingOddsPhase: null,
+        pendingOddsKey: null,
+      });
+    }
     
     state.addActivityFeedItem({
       username: 'YOU',
@@ -525,6 +640,47 @@ export const useGameStore = create<GameStore>((set, get) => ({
       amount: cashOut.toFixed(2),
       isYou: true,
       isSell: true,
+    });
+  },
+
+  toggleReveal: (player) => {
+    const state = get();
+    const hasCards =
+      player === 'player1'
+        ? state.player1Cards.length === 2
+        : player === 'player2'
+          ? state.player2Cards.length === 2
+          : state.player3Cards.length === 2;
+
+    if (!hasCards || state.phase === PHASES.PRE_DEAL || state.phase === PHASES.RESOLUTION) {
+      return;
+    }
+
+    const isPrimary = state.chosenPlayer === player;
+    const nextRevealed = {
+      ...state.revealedPlayers,
+      [player]: isPrimary ? true : !state.revealedPlayers[player],
+    };
+
+    set({ revealedPlayers: nextRevealed });
+
+    const updated = get();
+    const revealed = getRevealedHoleCards(updated);
+    const oddsDeck = buildOddsDeck(updated);
+    const newOdds = calculateWinProbabilities(
+      revealed.player1,
+      revealed.player2,
+      revealed.player3,
+      updated.communityCards,
+      oddsDeck,
+      updated.phase
+    );
+    set({
+      trueOdds: newOdds,
+      history: [...updated.history, newOdds],
+      pendingOdds: null,
+      pendingOddsPhase: null,
+      pendingOddsKey: null,
     });
   },
 

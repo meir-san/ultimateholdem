@@ -287,6 +287,7 @@ interface PlayerDealerCardsProps {
   showPlayer1Cards: boolean;
   showPlayer2Cards: boolean;
   showPlayer3Cards: boolean;
+  onToggleReveal: (player: 'player1' | 'player2' | 'player3') => void;
 }
 
 export function PlayerDealerCards({
@@ -298,6 +299,7 @@ export function PlayerDealerCards({
   showPlayer1Cards,
   showPlayer2Cards,
   showPlayer3Cards,
+  onToggleReveal,
 }: PlayerDealerCardsProps) {
   const isPreDeal = phase === PHASES.PRE_DEAL;
   const isPlayerCards = phase === PHASES.PLAYER_CARDS;
@@ -330,7 +332,10 @@ export function PlayerDealerCards({
   return (
     <div className="grid grid-cols-3 gap-4 mb-3">
       {/* Player Cards */}
-      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
+      <div
+        className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col cursor-pointer hover:border-slate-600"
+        onClick={() => onToggleReveal('player1')}
+      >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-emerald-500 rounded-full" />
@@ -374,7 +379,10 @@ export function PlayerDealerCards({
       </div>
 
       {/* Player 2 Cards */}
-      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
+      <div
+        className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col cursor-pointer hover:border-slate-600"
+        onClick={() => onToggleReveal('player2')}
+      >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-amber-500 rounded-full" />
@@ -419,7 +427,10 @@ export function PlayerDealerCards({
       </div>
 
       {/* Player 3 Cards */}
-      <div className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col">
+      <div
+        className="bg-slate-900/80 rounded-2xl border border-slate-800 p-4 flex flex-col cursor-pointer hover:border-slate-600"
+        onClick={() => onToggleReveal('player3')}
+      >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-purple-500 rounded-full" />

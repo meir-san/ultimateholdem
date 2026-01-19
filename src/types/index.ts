@@ -123,6 +123,12 @@ export interface GameState {
   priceHistory: PriceHistoryPoint[];
   showReferences: boolean;
   chosenPlayer: 'player1' | 'player2' | 'player3';
+  revealedPlayers: {
+    player1: boolean;
+    player2: boolean;
+    player3: boolean;
+  };
+  firstBuyOutcome: 'player1' | 'player2' | 'player3' | null;
   
   // Round history
   roundHistory: RoundHistoryItem[];

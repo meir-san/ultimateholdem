@@ -19,7 +19,7 @@ function App() {
     player2Cards,
     player3Cards,
     communityCards,
-    chosenPlayer,
+    revealedPlayers,
     trueOdds,
     roundResult,
     roundNumber,
@@ -40,6 +40,7 @@ function App() {
     setSelectedBetAmount,
     decrementTimer,
     simulateCrowdBet,
+    toggleReveal,
     updatePriceHistory,
     rebalanceMarket,
     nextRound,
@@ -261,9 +262,10 @@ function App() {
             player2Cards={player2Cards}
             player3Cards={player3Cards}
             communityCards={communityCards}
-            showPlayer1Cards={chosenPlayer === 'player1' || phase === PHASES.RESOLUTION}
-            showPlayer2Cards={chosenPlayer === 'player2' || phase === PHASES.RESOLUTION}
-            showPlayer3Cards={chosenPlayer === 'player3' || phase === PHASES.RESOLUTION}
+            showPlayer1Cards={revealedPlayers.player1 || phase === PHASES.RESOLUTION}
+            showPlayer2Cards={revealedPlayers.player2 || phase === PHASES.RESOLUTION}
+            showPlayer3Cards={revealedPlayers.player3 || phase === PHASES.RESOLUTION}
+            onToggleReveal={toggleReveal}
           />
 
           <PhaseTimer

@@ -64,8 +64,8 @@ export function CardDisplay({ card, hidden = false, size = 'md' }: CardDisplayPr
         shadow-lg shadow-black/30
       `}
     >
-      {/* Small suit in top-left corner */}
-      <span className={`absolute top-1 left-1.5 ${suitColor} text-xs font-bold opacity-80`}>
+      {/* Suit in top-left corner */}
+      <span className={`absolute top-1 left-1.5 ${suitColor} text-lg font-black opacity-90 leading-none`}>
         {suitSymbols[card.suit]}
       </span>
       {/* Large rank in center */}

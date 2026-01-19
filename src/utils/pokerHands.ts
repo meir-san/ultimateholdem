@@ -61,7 +61,8 @@ function evaluateFiveCards(cards: Card[]): EvaluatedHand {
 
   // Straight flush
   if (isFlush && isStraight) {
-    return { rank: HandRank.STRAIGHT_FLUSH, cards: sorted };
+    const straightHigh = getStraightHigh(ranks);
+    return { rank: HandRank.STRAIGHT_FLUSH, cards: sorted, kickers: [straightHigh] };
   }
 
   // Four of a kind
@@ -91,7 +92,8 @@ function evaluateFiveCards(cards: Card[]): EvaluatedHand {
 
   // Straight
   if (isStraight) {
-    return { rank: HandRank.STRAIGHT, cards: sorted };
+    const straightHigh = getStraightHigh(ranks);
+    return { rank: HandRank.STRAIGHT, cards: sorted, kickers: [straightHigh] };
   }
 
   // Three of a kind
@@ -158,6 +160,14 @@ function checkStraight(ranks: number[]): boolean {
   }
 
   return false;
+}
+
+function getStraightHigh(ranks: number[]): number {
+  const unique = Array.from(new Set(ranks)).sort((a, b) => b - a);
+  if (unique.includes(14) && unique.includes(5) && unique.includes(4) && unique.includes(3) && unique.includes(2)) {
+    return 5;
+  }
+  return unique[0];
 }
 
 /**

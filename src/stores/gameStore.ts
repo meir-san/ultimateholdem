@@ -120,6 +120,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   activityFeed: [],
   priceHistory: [],
   showReferences: true,
+  revealedPlayer: 'player',
   roundHistory: [],
 
   startNewRound: () => {
@@ -158,6 +159,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       roundProfit: null,
       activityFeed: [],
       priceHistory: [],
+      revealedPlayer: 'player',
       pool: initialPool,
       crowdBets: initialPool,
       // Don't reset roundHistory - keep accumulating
@@ -440,6 +442,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         ...state.myPositions,
         [type]: [...state.myPositions[type], newPosition],
       },
+      revealedPlayer: type === 'push' ? state.revealedPlayer : type,
       pool: {
         ...state.pool,
         [type]: state.pool[type] + (amount * (1 - PLATFORM_FEE)),

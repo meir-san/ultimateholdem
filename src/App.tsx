@@ -19,6 +19,7 @@ function App() {
     dealerCards,
     player3Cards,
     communityCards,
+    revealedPlayer,
     trueOdds,
     roundResult,
     roundNumber,
@@ -260,8 +261,9 @@ function App() {
             dealerCards={dealerCards}
             player3Cards={player3Cards}
             communityCards={communityCards}
-            showDealerCards={phase === PHASES.DEALER_CARDS || phase === PHASES.RESOLUTION}
-            showPlayer3Cards={phase === PHASES.DEALER_CARDS || phase === PHASES.RESOLUTION}
+            showPlayer1Cards={revealedPlayer === 'player' || phase === PHASES.RESOLUTION}
+            showDealerCards={revealedPlayer === 'dealer' || phase === PHASES.RESOLUTION}
+            showPlayer3Cards={revealedPlayer === 'player3' || phase === PHASES.RESOLUTION}
           />
 
           <PhaseTimer

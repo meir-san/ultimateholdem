@@ -122,6 +122,7 @@ export interface GameState {
   activityFeed: ActivityFeedItem[];
   priceHistory: PriceHistoryPoint[];
   showReferences: boolean;
+  revealedPlayer: 'player' | 'dealer' | 'player3';
   
   // Round history
   roundHistory: RoundHistoryItem[];

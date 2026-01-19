@@ -284,6 +284,7 @@ interface PlayerDealerCardsProps {
   dealerCards: Card[];
   player3Cards: Card[];
   communityCards: Card[];
+  showPlayer1Cards: boolean;
   showDealerCards: boolean;
   showPlayer3Cards: boolean;
 }
@@ -294,6 +295,7 @@ export function PlayerDealerCards({
   dealerCards,
   player3Cards,
   communityCards,
+  showPlayer1Cards,
   showDealerCards,
   showPlayer3Cards,
 }: PlayerDealerCardsProps) {
@@ -340,27 +342,34 @@ export function PlayerDealerCards({
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {isPreDeal || playerCards.length === 0 ? (
+          {playerCards.length === 0 ? (
             <>
               <CardDisplay card={null} />
               <CardDisplay card={null} />
             </>
-          ) : (
+          ) : showPlayer1Cards ? (
             <>
               {playerCards.map((card, i) => (
                 <CardDisplay key={i} card={card} />
               ))}
+            </>
+          ) : (
+            <>
+              <CardDisplay card={null} hidden />
+              <CardDisplay card={null} hidden />
             </>
           )}
         </div>
 
         {/* Player Hand Description */}
         <div className="text-center text-sm font-medium text-emerald-400">
-          {playerCards.length > 0
+          {playerCards.length > 0 && showPlayer1Cards
             ? isResolution
               ? getFullHandDescription(playerCards, communityCards)
               : getHoleCardDescription(playerCards, communityCards)
-            : '—'}
+            : playerCards.length > 0
+              ? 'Hidden'
+              : '—'}
         </div>
       </div>
 

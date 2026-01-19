@@ -39,9 +39,7 @@ function calculateExactProbabilities(
 
   const remainingCommunityCount = 5 - communityCards.length;
 
-  // Helper to compare a single fully-specified outcome
-  const tally = (finalDealer: Card[], finalCommunity: Card[]) => {
-    const playerHand = evaluateHand([...playerHoleCards, ...finalCommunity]);
+  const tally = (playerHand: ReturnType<typeof evaluateHand>, finalDealer: Card[], finalCommunity: Card[]) => {
     const dealerHand = evaluateHand([...finalDealer, ...finalCommunity]);
     const result = determineWinner(playerHand, dealerHand);
     if (result === 'player') playerWins++;
@@ -54,7 +52,8 @@ function calculateExactProbabilities(
     let total = 0;
     if (remainingCommunityCount === 0) {
       total = 1;
-      tally(dealerHoleCards, communityCards);
+      const playerHand = evaluateHand([...playerHoleCards, ...communityCards]);
+      tally(playerHand, dealerHoleCards, communityCards);
       return {
         player: (playerWins / total) * 100,
         dealer: (dealerWins / total) * 100,
@@ -62,16 +61,23 @@ function calculateExactProbabilities(
       };
     }
 
-    const combos = generateTwoCardCombinations(deck);
     if (remainingCommunityCount === 1) {
       for (const card of deck) {
         total++;
-        tally(dealerHoleCards, [...communityCards, card]);
+        const finalCommunity = [...communityCards, card];
+        const playerHand = evaluateHand([...playerHoleCards, ...finalCommunity]);
+        tally(playerHand, dealerHoleCards, finalCommunity);
       }
     } else if (remainingCommunityCount === 2) {
-      for (const [c1, c2] of combos) {
+      for (let i = 0; i < deck.length - 1; i++) {
+        for (let j = i + 1; j < deck.length; j++) {
+          const c1 = deck[i];
+          const c2 = deck[j];
         total++;
-        tally(dealerHoleCards, [...communityCards, c1, c2]);
+        const finalCommunity = [...communityCards, c1, c2];
+        const playerHand = evaluateHand([...playerHoleCards, ...finalCommunity]);
+        tally(playerHand, dealerHoleCards, finalCommunity);
+        }
       }
     } else {
       // Remaining community count too large for exact enumeration here
@@ -89,29 +95,37 @@ function calculateExactProbabilities(
   const dealerCombinations = generateTwoCardCombinations(deck);
   let total = 0;
 
-  for (const [dCard1, dCard2] of dealerCombinations) {
-    const dealerHole = [dCard1, dCard2];
-    if (remainingCommunityCount === 0) {
+  if (remainingCommunityCount === 0) {
+    for (const [dCard1, dCard2] of dealerCombinations) {
       total++;
-      tally(dealerHole, communityCards);
-      continue;
+      const playerHand = evaluateHand([...playerHoleCards, ...communityCards]);
+      tally(playerHand, [dCard1, dCard2], communityCards);
     }
-
-    // Build remaining deck excluding dealer hole cards
-    const remainingDeck = deck.filter(
-      (card) => card !== dCard1 && card !== dCard2
-    );
-
-    if (remainingCommunityCount === 1) {
-      for (const card of remainingDeck) {
-        total++;
-        tally(dealerHole, [...communityCards, card]);
-      }
-    } else if (remainingCommunityCount === 2) {
+  } else if (remainingCommunityCount === 1) {
+    for (const river of deck) {
+      const finalCommunity = [...communityCards, river];
+      const playerHand = evaluateHand([...playerHoleCards, ...finalCommunity]);
+      const remainingDeck = deck.filter((card) => card !== river);
       for (let i = 0; i < remainingDeck.length - 1; i++) {
         for (let j = i + 1; j < remainingDeck.length; j++) {
           total++;
-          tally(dealerHole, [...communityCards, remainingDeck[i], remainingDeck[j]]);
+          tally(playerHand, [remainingDeck[i], remainingDeck[j]], finalCommunity);
+        }
+      }
+    }
+  } else if (remainingCommunityCount === 2) {
+    for (let i = 0; i < deck.length - 1; i++) {
+      for (let j = i + 1; j < deck.length; j++) {
+        const turn = deck[i];
+        const river = deck[j];
+        const finalCommunity = [...communityCards, turn, river];
+        const playerHand = evaluateHand([...playerHoleCards, ...finalCommunity]);
+        const remainingDeck = deck.filter((card) => card !== turn && card !== river);
+        for (let k = 0; k < remainingDeck.length - 1; k++) {
+          for (let l = k + 1; l < remainingDeck.length; l++) {
+            total++;
+            tally(playerHand, [remainingDeck[k], remainingDeck[l]], finalCommunity);
+          }
         }
       }
     }

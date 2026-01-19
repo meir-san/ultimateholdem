@@ -62,10 +62,22 @@ export function calculateWinProbabilities(
   }
 
   const pushOdds = (pushes / simulations) * 100;
+  const playerOdds = (playerWins / simulations) * 100;
+  let dealerOdds = (dealerWins / simulations) * 100;
+  let player3Odds = (player3Wins / simulations) * 100;
+
+  // If both opponent hands are hidden/unknown, they are symmetric.
+  // Enforce equality to avoid Monte Carlo noise splitting them unevenly.
+  if (dealerHoleCards.length === 0 && player3HoleCards.length === 0) {
+    const avg = (dealerOdds + player3Odds) / 2;
+    dealerOdds = avg;
+    player3Odds = avg;
+  }
+
   return {
-    player: (playerWins / simulations) * 100,
-    dealer: (dealerWins / simulations) * 100,
-    player3: (player3Wins / simulations) * 100,
+    player: playerOdds,
+    dealer: dealerOdds,
+    player3: player3Odds,
     push: pushOdds,
   };
 }

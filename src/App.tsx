@@ -56,6 +56,8 @@ function App() {
   const shouldAdvanceRef = useRef(false);
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFeesOverlay, setShowFeesOverlay] = useState(false);
+  const [pendingOutline, setPendingOutline] = useState({ player: false, dealer: false, push: false });
+  const outlineTimeoutsRef = useRef<{ [key in 'player' | 'dealer' | 'push']?: ReturnType<typeof setTimeout> }>({});
 
   // Initialize game
   useEffect(() => {
@@ -192,6 +194,28 @@ function App() {
   const betsLocked = timer <= 2 && phase !== PHASES.RESOLUTION;
   const canBet = phase !== PHASES.RESOLUTION && balance >= selectedBetAmount && !marketLocked && !betsLocked;
 
+  useEffect(() => {
+    return () => {
+      Object.values(outlineTimeoutsRef.current).forEach((timeout) => {
+        if (timeout) clearTimeout(timeout);
+      });
+    };
+  }, []);
+
+  const handlePlaceBet = (type: 'player' | 'dealer' | 'push') => {
+    const hasPosition = getMyBetTotal(type) > 0;
+    if (!hasPosition && canBet) {
+      setPendingOutline((prev) => ({ ...prev, [type]: true }));
+      if (outlineTimeoutsRef.current[type]) {
+        clearTimeout(outlineTimeoutsRef.current[type]);
+      }
+      outlineTimeoutsRef.current[type] = setTimeout(() => {
+        setPendingOutline((prev) => ({ ...prev, [type]: false }));
+      }, 1000);
+    }
+    placeBet(type);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       {/* App Header */}
@@ -273,11 +297,11 @@ function App() {
               <span className="text-white font-bold">${totalMyBets}</span>
             </div>
             <div>
-              <span className="text-slate-300">Volume </span>
+              <span className="text-slate-300">Total Volume </span>
               <span className="text-yellow-400 font-bold">${lifetimeVolume.toFixed(0)}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="text-slate-300">Fees </span>
+              <span className="text-slate-300">Total Fees </span>
               <span className="text-rose-400 font-bold">${(lifetimeVolume * 0.035).toFixed(2)}</span>
               <button
                 onClick={() => setShowFeesOverlay(true)}
@@ -366,12 +390,13 @@ function App() {
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
                 hasPosition={getMyBetTotal('player') > 0}
+                showOutline={getMyBetTotal('player') > 0 && !pendingOutline.player}
                 shares={getTotalShares('player')}
                 amountPaid={getMyBetTotal('player')}
                 winPayout={getPotentialPayout('player')}
                 currentValue={getPositionValue('player')}
                 pnl={getUnrealizedPnL('player')}
-                onPlaceBet={() => placeBet('player')}
+                onPlaceBet={() => handlePlaceBet('player')}
                 onSellPosition={() => sellPosition('player')}
               />
               <BettingRow
@@ -383,12 +408,13 @@ function App() {
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
                 hasPosition={getMyBetTotal('dealer') > 0}
+                showOutline={getMyBetTotal('dealer') > 0 && !pendingOutline.dealer}
                 shares={getTotalShares('dealer')}
                 amountPaid={getMyBetTotal('dealer')}
                 winPayout={getPotentialPayout('dealer')}
                 currentValue={getPositionValue('dealer')}
                 pnl={getUnrealizedPnL('dealer')}
-                onPlaceBet={() => placeBet('dealer')}
+                onPlaceBet={() => handlePlaceBet('dealer')}
                 onSellPosition={() => sellPosition('dealer')}
               />
               <BettingRow
@@ -400,12 +426,13 @@ function App() {
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
                 hasPosition={getMyBetTotal('push') > 0}
+                showOutline={getMyBetTotal('push') > 0 && !pendingOutline.push}
                 shares={getTotalShares('push')}
                 amountPaid={getMyBetTotal('push')}
                 winPayout={getPotentialPayout('push')}
                 currentValue={getPositionValue('push')}
                 pnl={getUnrealizedPnL('push')}
-                onPlaceBet={() => placeBet('push')}
+                onPlaceBet={() => handlePlaceBet('push')}
                 onSellPosition={() => sellPosition('push')}
               />
             </div>

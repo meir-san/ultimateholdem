@@ -9,6 +9,7 @@ interface BettingRowProps {
   marketLocked: boolean;
   selectedBetAmount: number;
   hasPosition: boolean;
+  showOutline?: boolean;
   shares: number;
   amountPaid: number;
   winPayout: number;
@@ -27,6 +28,7 @@ export function BettingRow({
   marketLocked,
   selectedBetAmount,
   hasPosition,
+  showOutline,
   shares,
   amountPaid,
   winPayout,
@@ -60,12 +62,13 @@ export function BettingRow({
   };
 
   const c = colors[type];
+  const outline = showOutline ?? hasPosition;
 
   return (
     <div
       className={`
         py-4 px-4 transition-colors rounded-lg mx-1 my-1.5
-        ${hasPosition ? `ring-2 ${c.ring} bg-slate-800/60` : 'bg-slate-900/60 hover:bg-slate-800/60'}
+        ${outline ? `ring-2 ${c.ring} bg-slate-800/60` : 'bg-slate-900/60 hover:bg-slate-800/60'}
       `}
     >
       {/* Row 1: Outcome, Price, Volume, Buy Button */}

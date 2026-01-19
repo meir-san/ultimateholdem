@@ -2,16 +2,16 @@ import type { PriceHistoryPoint } from '../types';
 
 interface PriceChartProps {
   priceHistory: PriceHistoryPoint[];
-  hasPlayerPosition: boolean;
-  hasDealerPosition: boolean;
+  hasPlayer1Position: boolean;
+  hasPlayer2Position: boolean;
   hasPlayer3Position: boolean;
   hasPushPosition: boolean;
 }
 
 export function PriceChart({
   priceHistory,
-  hasPlayerPosition,
-  hasDealerPosition,
+  hasPlayer1Position,
+  hasPlayer2Position,
   hasPlayer3Position,
   hasPushPosition,
 }: PriceChartProps) {
@@ -35,7 +35,7 @@ export function PriceChart({
   const minY = 0;
   const maxY = 100;
 
-  const generatePath = (key: 'player' | 'dealer' | 'player3' | 'push') => {
+  const generatePath = (key: 'player1' | 'player2' | 'player3' | 'push') => {
     return priceHistory
       .map((point, i) => {
         const x = padding.left + (i / (priceHistory.length - 1)) * chartWidth;
@@ -58,21 +58,21 @@ export function PriceChart({
           <div className="flex items-center gap-1.5">
             <div
               className={`w-4 h-1 rounded-full bg-emerald-400 ${
-                hasPlayerPosition ? 'ring-2 ring-emerald-400/50' : ''
+                hasPlayer1Position ? 'ring-2 ring-emerald-400/50' : ''
               }`}
             />
-            <span className={hasPlayerPosition ? 'text-emerald-300 font-semibold' : 'text-emerald-400'}>
-              Player 1 {hasPlayerPosition && '●'}
+            <span className={hasPlayer1Position ? 'text-emerald-300 font-semibold' : 'text-emerald-400'}>
+              Player 1 {hasPlayer1Position && '●'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
             <div
               className={`w-4 h-1 rounded-full bg-amber-400 ${
-                hasDealerPosition ? 'ring-2 ring-amber-400/50' : ''
+                hasPlayer2Position ? 'ring-2 ring-amber-400/50' : ''
               }`}
             />
-            <span className={hasDealerPosition ? 'text-amber-300 font-semibold' : 'text-amber-400'}>
-              Player 2 {hasDealerPosition && '●'}
+            <span className={hasPlayer2Position ? 'text-amber-300 font-semibold' : 'text-amber-400'}>
+              Player 2 {hasPlayer2Position && '●'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -151,28 +151,28 @@ export function PriceChart({
           );
         })}
 
-        {/* Player line */}
+        {/* Player 1 line */}
         <path
-          d={generatePath('player')}
+          d={generatePath('player1')}
           fill="none"
           stroke="#34d399"
-          strokeWidth={hasPlayerPosition ? '4' : '2'}
+          strokeWidth={hasPlayer1Position ? '4' : '2'}
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter={hasPlayerPosition ? 'url(#glow-green)' : undefined}
-          opacity={hasPlayerPosition ? 1 : 0.7}
+          filter={hasPlayer1Position ? 'url(#glow-green)' : undefined}
+          opacity={hasPlayer1Position ? 1 : 0.7}
         />
 
         {/* Player 2 line */}
         <path
-          d={generatePath('dealer')}
+          d={generatePath('player2')}
           fill="none"
           stroke="#fbbf24"
-          strokeWidth={hasDealerPosition ? '4' : '2'}
+          strokeWidth={hasPlayer2Position ? '4' : '2'}
           strokeLinecap="round"
           strokeLinejoin="round"
-          filter={hasDealerPosition ? 'url(#glow-amber)' : undefined}
-          opacity={hasDealerPosition ? 1 : 0.7}
+          filter={hasPlayer2Position ? 'url(#glow-amber)' : undefined}
+          opacity={hasPlayer2Position ? 1 : 0.7}
         />
 
         {/* Player 3 line */}
@@ -204,36 +204,36 @@ export function PriceChart({
           <>
             <circle
               cx={width - padding.right}
-              cy={padding.top + chartHeight - ((currentPrices.player - minY) / (maxY - minY)) * chartHeight}
-              r={hasPlayerPosition ? '6' : '4'}
+              cy={padding.top + chartHeight - ((currentPrices.player1 - minY) / (maxY - minY)) * chartHeight}
+              r={hasPlayer1Position ? '6' : '4'}
               fill="#34d399"
-              filter={hasPlayerPosition ? 'url(#glow-green)' : undefined}
+              filter={hasPlayer1Position ? 'url(#glow-green)' : undefined}
             />
             <text
               x={width - padding.right + 8}
-              y={padding.top + chartHeight - ((currentPrices.player - minY) / (maxY - minY)) * chartHeight + 3}
+              y={padding.top + chartHeight - ((currentPrices.player1 - minY) / (maxY - minY)) * chartHeight + 3}
               fill="#34d399"
-              fontSize={hasPlayerPosition ? '11' : '10'}
+              fontSize={hasPlayer1Position ? '11' : '10'}
               fontWeight="bold"
             >
-              {currentPrices.player.toFixed(0)}¢
+              {currentPrices.player1.toFixed(0)}¢
             </text>
 
             <circle
               cx={width - padding.right}
-              cy={padding.top + chartHeight - ((currentPrices.dealer - minY) / (maxY - minY)) * chartHeight}
-              r={hasDealerPosition ? '6' : '4'}
+              cy={padding.top + chartHeight - ((currentPrices.player2 - minY) / (maxY - minY)) * chartHeight}
+              r={hasPlayer2Position ? '6' : '4'}
               fill="#fbbf24"
-              filter={hasDealerPosition ? 'url(#glow-amber)' : undefined}
+              filter={hasPlayer2Position ? 'url(#glow-amber)' : undefined}
             />
             <text
               x={width - padding.right + 8}
-              y={padding.top + chartHeight - ((currentPrices.dealer - minY) / (maxY - minY)) * chartHeight + 3}
+              y={padding.top + chartHeight - ((currentPrices.player2 - minY) / (maxY - minY)) * chartHeight + 3}
               fill="#fbbf24"
-              fontSize={hasDealerPosition ? '11' : '10'}
+              fontSize={hasPlayer2Position ? '11' : '10'}
               fontWeight="bold"
             >
-              {currentPrices.dealer.toFixed(0)}¢
+              {currentPrices.player2.toFixed(0)}¢
             </text>
 
             <circle

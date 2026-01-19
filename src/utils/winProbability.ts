@@ -12,12 +12,12 @@ import { evaluateHand, determineWinnerThree } from './pokerHands';
 
 /**
  * Calculates win probabilities using Monte Carlo simulation or exact enumeration
- * Uses exact enumeration for RIVER phase when only dealer cards are unknown
+ * Uses exact enumeration for RIVER phase when only Player 2 cards are unknown
  * Otherwise uses Monte Carlo simulation
  */
 export function calculateWinProbabilities(
-  playerHoleCards: Card[],
-  dealerHoleCards: Card[],
+  player1HoleCards: Card[],
+  player2HoleCards: Card[],
   player3HoleCards: Card[],
   communityCards: Card[],
   deck: Card[],
@@ -28,8 +28,8 @@ export function calculateWinProbabilities(
   // Exact pre-deal odds (deterministic + symmetric)
   if (
     phase === PHASES.PRE_DEAL &&
-    playerHoleCards.length === 0 &&
-    dealerHoleCards.length === 0 &&
+    player1HoleCards.length === 0 &&
+    player2HoleCards.length === 0 &&
     player3HoleCards.length === 0 &&
     communityCards.length === 0
   ) {
@@ -42,41 +42,46 @@ export function calculateWinProbabilities(
   // Use Monte Carlo for all other cases
   const simulations =
     phase === PHASES.PRE_DEAL &&
-    playerHoleCards.length === 0 &&
-    dealerHoleCards.length === 0 &&
+    player1HoleCards.length === 0 &&
+    player2HoleCards.length === 0 &&
     player3HoleCards.length === 0 &&
     communityCards.length === 0
       ? MONTE_CARLO_SIMULATIONS_PRE_DEAL
       : MONTE_CARLO_SIMULATIONS;
-  let playerWins = 0;
-  let dealerWins = 0;
+  let player1Wins = 0;
+  let player2Wins = 0;
   let player3Wins = 0;
   let pushes = 0;
 
   for (let i = 0; i < simulations; i++) {
-    const result = simulateGame(playerHoleCards, dealerHoleCards, player3HoleCards, communityCards, deck, phase);
-    if (result === 'player') playerWins++;
-    else if (result === 'dealer') dealerWins++;
+    const result = simulateGame(player1HoleCards, player2HoleCards, player3HoleCards, communityCards, deck, phase);
+    if (result === 'player1') player1Wins++;
+    else if (result === 'player2') player2Wins++;
     else if (result === 'player3') player3Wins++;
     else pushes++;
   }
 
   const pushOdds = (pushes / simulations) * 100;
-  const playerOdds = (playerWins / simulations) * 100;
-  let dealerOdds = (dealerWins / simulations) * 100;
+  let player1Odds = (player1Wins / simulations) * 100;
+  let player2Odds = (player2Wins / simulations) * 100;
   let player3Odds = (player3Wins / simulations) * 100;
 
-  // If both opponent hands are hidden/unknown, they are symmetric.
-  // Enforce equality to avoid Monte Carlo noise splitting them unevenly.
-  if (dealerHoleCards.length === 0 && player3HoleCards.length === 0) {
-    const avg = (dealerOdds + player3Odds) / 2;
-    dealerOdds = avg;
-    player3Odds = avg;
+  // If some hands are hidden/unknown, enforce symmetry among the unknown players.
+  const unknown: Array<{ key: 'player1' | 'player2' | 'player3'; value: number }> = [];
+  if (player1HoleCards.length === 0) unknown.push({ key: 'player1', value: player1Odds });
+  if (player2HoleCards.length === 0) unknown.push({ key: 'player2', value: player2Odds });
+  if (player3HoleCards.length === 0) unknown.push({ key: 'player3', value: player3Odds });
+
+  if (unknown.length >= 2) {
+    const avg = unknown.reduce((sum, item) => sum + item.value, 0) / unknown.length;
+    if (unknown.some((item) => item.key === 'player1')) player1Odds = avg;
+    if (unknown.some((item) => item.key === 'player2')) player2Odds = avg;
+    if (unknown.some((item) => item.key === 'player3')) player3Odds = avg;
   }
 
   return {
-    player: playerOdds,
-    dealer: dealerOdds,
+    player1: player1Odds,
+    player2: player2Odds,
     player3: player3Odds,
     push: pushOdds,
   };
@@ -86,29 +91,29 @@ export function calculateWinProbabilities(
  * Simulates a single game outcome
  */
 function simulateGame(
-  playerHoleCards: Card[],
-  dealerHoleCards: Card[],
+  player1HoleCards: Card[],
+  player2HoleCards: Card[],
   player3HoleCards: Card[],
   communityCards: Card[],
   deck: Card[],
   phase: Phase
-): 'player' | 'dealer' | 'player3' | 'push' {
+): 'player1' | 'player2' | 'player3' | 'push' {
   const simDeck = shuffle([...deck]);
-  let simPlayerHole = [...playerHoleCards];
-  let simDealerHole = [...dealerHoleCards];
+  let simPlayer1Hole = [...player1HoleCards];
+  let simPlayer2Hole = [...player2HoleCards];
   let simPlayer3Hole = [...player3HoleCards];
   let simCommunity = [...communityCards];
 
   // Deal missing cards if needed
-  if (simPlayerHole.length < 2) {
-    while (simPlayerHole.length < 2 && simDeck.length > 0) {
-      simPlayerHole.push(simDeck.pop()!);
+  if (simPlayer1Hole.length < 2) {
+    while (simPlayer1Hole.length < 2 && simDeck.length > 0) {
+      simPlayer1Hole.push(simDeck.pop()!);
     }
   }
 
-  if (simDealerHole.length < 2) {
-    while (simDealerHole.length < 2 && simDeck.length > 0) {
-      simDealerHole.push(simDeck.pop()!);
+  if (simPlayer2Hole.length < 2) {
+    while (simPlayer2Hole.length < 2 && simDeck.length > 0) {
+      simPlayer2Hole.push(simDeck.pop()!);
     }
   }
 
@@ -149,14 +154,14 @@ function simulateGame(
     }
   }
 
-  // For river and dealer card phases, all community cards are already dealt
+  // For river and player 2 card phases, all community cards are already dealt
   if (phase === PHASES.RIVER || phase === PHASES.DEALER_CARDS) {
     // Community cards are already complete, no need to deal more
   }
 
   // Evaluate final hands
-  const playerHand = evaluateHand([...simPlayerHole, ...simCommunity]);
-  const dealerHand = evaluateHand([...simDealerHole, ...simCommunity]);
+  const playerHand = evaluateHand([...simPlayer1Hole, ...simCommunity]);
+  const player2Hand = evaluateHand([...simPlayer2Hole, ...simCommunity]);
   const player3Hand = evaluateHand([...simPlayer3Hole, ...simCommunity]);
-  return determineWinnerThree(playerHand, dealerHand, player3Hand);
+  return determineWinnerThree(playerHand, player2Hand, player3Hand);
 }

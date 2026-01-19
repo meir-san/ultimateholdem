@@ -3,8 +3,8 @@ import { CardDisplay, CardRow } from './CardDisplay';
 import { PHASES } from '../config/constants';
 
 interface GameBoardProps {
-  playerCards: Card[];
-  dealerCards: Card[];
+  player1Cards: Card[];
+  player2Cards: Card[];
   player3Cards: Card[];
   communityCards: Card[];
   phase: string;
@@ -12,8 +12,8 @@ interface GameBoardProps {
 }
 
 export function GameBoard({
-  playerCards,
-  dealerCards,
+  player1Cards,
+  player2Cards,
   player3Cards,
   communityCards,
   phase,
@@ -55,7 +55,7 @@ export function GameBoard({
       <div className="flex flex-col items-center gap-8">
         {/* Player 2 Cards */}
         <CardRow
-          cards={dealerCards}
+          cards={player2Cards}
           label="Player 2"
           hidden={!showDealerCards}
           size="md"
@@ -85,7 +85,7 @@ export function GameBoard({
 
         {/* Player Cards */}
         <CardRow
-          cards={playerCards}
+          cards={player1Cards}
           label="Player 1"
           hidden={false}
           size="md"

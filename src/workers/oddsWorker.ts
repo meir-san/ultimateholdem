@@ -4,8 +4,8 @@ import { calculateWinProbabilities } from '../utils/winProbability';
 
 type OddsRequest = {
   requestId: number;
-  playerHoleCards: Card[];
-  dealerHoleCards: Card[];
+  player1HoleCards: Card[];
+  player2HoleCards: Card[];
   player3HoleCards: Card[];
   communityCards: Card[];
   deck: Card[];
@@ -18,8 +18,8 @@ type OddsResponse = {
 };
 
 self.onmessage = (event: MessageEvent<OddsRequest>) => {
-  const { requestId, playerHoleCards, dealerHoleCards, player3HoleCards, communityCards, deck, phase } = event.data;
-  const odds = calculateWinProbabilities(playerHoleCards, dealerHoleCards, player3HoleCards, communityCards, deck, phase);
+  const { requestId, player1HoleCards, player2HoleCards, player3HoleCards, communityCards, deck, phase } = event.data;
+  const odds = calculateWinProbabilities(player1HoleCards, player2HoleCards, player3HoleCards, communityCards, deck, phase);
   const response: OddsResponse = { requestId, odds };
   self.postMessage(response);
 };

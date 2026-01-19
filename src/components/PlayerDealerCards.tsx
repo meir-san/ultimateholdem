@@ -280,23 +280,23 @@ function getFullHandDescription(cards: Card[], communityCards: Card[]): string {
 
 interface PlayerDealerCardsProps {
   phase: Phase;
-  playerCards: Card[];
-  dealerCards: Card[];
+  player1Cards: Card[];
+  player2Cards: Card[];
   player3Cards: Card[];
   communityCards: Card[];
   showPlayer1Cards: boolean;
-  showDealerCards: boolean;
+  showPlayer2Cards: boolean;
   showPlayer3Cards: boolean;
 }
 
 export function PlayerDealerCards({
   phase,
-  playerCards,
-  dealerCards,
+  player1Cards,
+  player2Cards,
   player3Cards,
   communityCards,
   showPlayer1Cards,
-  showDealerCards,
+  showPlayer2Cards,
   showPlayer3Cards,
 }: PlayerDealerCardsProps) {
   const isPreDeal = phase === PHASES.PRE_DEAL;
@@ -311,7 +311,7 @@ export function PlayerDealerCards({
     return { label: 'HOLD', color: 'bg-slate-700 text-slate-400' };
   };
 
-  const getDealerStatus = () => {
+  const getPlayer2Status = () => {
     if (isPreDeal || isPlayerCards || isCommunityCards) return { label: 'WAITING', color: 'bg-slate-700 text-slate-400' };
     if (isDealerCards || isResolution) return { label: 'ACTIVE', color: 'bg-amber-500/20 text-amber-400' };
     return { label: 'HOLD', color: 'bg-slate-700 text-slate-400' };
@@ -324,7 +324,7 @@ export function PlayerDealerCards({
   };
 
   const playerStatus = getPlayerStatus();
-  const dealerStatus = getDealerStatus();
+  const player2Status = getPlayer2Status();
   const player3Status = getPlayer3Status();
 
   return (
@@ -342,14 +342,14 @@ export function PlayerDealerCards({
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {playerCards.length === 0 ? (
+          {player1Cards.length === 0 ? (
             <>
               <CardDisplay card={null} />
               <CardDisplay card={null} />
             </>
           ) : showPlayer1Cards ? (
             <>
-              {playerCards.map((card, i) => (
+              {player1Cards.map((card, i) => (
                 <CardDisplay key={i} card={card} />
               ))}
             </>
@@ -363,11 +363,11 @@ export function PlayerDealerCards({
 
         {/* Player Hand Description */}
         <div className="text-center text-sm font-medium text-emerald-400">
-          {playerCards.length > 0 && showPlayer1Cards
+          {player1Cards.length > 0 && showPlayer1Cards
             ? isResolution
-              ? getFullHandDescription(playerCards, communityCards)
-              : getHoleCardDescription(playerCards, communityCards)
-            : playerCards.length > 0
+              ? getFullHandDescription(player1Cards, communityCards)
+              : getHoleCardDescription(player1Cards, communityCards)
+            : player1Cards.length > 0
               ? 'Hidden'
               : '—'}
         </div>
@@ -380,23 +380,23 @@ export function PlayerDealerCards({
             <div className="w-3 h-3 bg-amber-500 rounded-full" />
             <span className="font-semibold text-slate-300">PLAYER 2</span>
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${player3Status.color}`}>
-            {player3Status.label}
+          <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${player2Status.color}`}>
+            {player2Status.label}
           </span>
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {dealerCards.length === 0 ? (
+          {player2Cards.length === 0 ? (
             <>
               <CardDisplay card={null} />
               <CardDisplay card={null} />
             </>
-          ) : showDealerCards ? (
+          ) : showPlayer2Cards ? (
             <>
-              {dealerCards.map((card, i) => (
+              {player2Cards.map((card, i) => (
                 <CardDisplay key={i} card={card} />
               ))}
-              {dealerCards.length === 1 && <CardDisplay card={null} />}
+              {player2Cards.length === 1 && <CardDisplay card={null} />}
             </>
           ) : (
             <>
@@ -408,11 +408,11 @@ export function PlayerDealerCards({
 
         {/* Player 2 Hand Description */}
         <div className="text-center text-sm font-medium text-amber-400">
-          {showDealerCards && dealerCards.length > 0
+          {showPlayer2Cards && player2Cards.length > 0
             ? isResolution
-              ? getFullHandDescription(dealerCards, communityCards)
-              : getHoleCardDescription(dealerCards, communityCards)
-            : dealerCards.length > 0
+              ? getFullHandDescription(player2Cards, communityCards)
+              : getHoleCardDescription(player2Cards, communityCards)
+            : player2Cards.length > 0
               ? 'Hidden'
               : '—'}
         </div>
@@ -425,8 +425,8 @@ export function PlayerDealerCards({
             <div className="w-3 h-3 bg-purple-500 rounded-full" />
             <span className="font-semibold text-slate-300">PLAYER 3</span>
           </div>
-          <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${dealerStatus.color}`}>
-            {dealerStatus.label}
+          <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${player3Status.color}`}>
+            {player3Status.label}
           </span>
         </div>
 

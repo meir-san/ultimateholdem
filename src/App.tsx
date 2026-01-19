@@ -15,11 +15,11 @@ function App() {
     // State
     phase,
     timer,
-    playerCards,
-    dealerCards,
+    player1Cards,
+    player2Cards,
     player3Cards,
     communityCards,
-    revealedPlayer,
+    chosenPlayer,
     trueOdds,
     roundResult,
     roundNumber,
@@ -58,8 +58,8 @@ function App() {
   const shouldAdvanceRef = useRef(false);
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFeesOverlay, setShowFeesOverlay] = useState(false);
-  const [pendingBuy, setPendingBuy] = useState({ player: false, dealer: false, player3: false, push: false });
-  const buyTimeoutsRef = useRef<{ [key in 'player' | 'dealer' | 'player3' | 'push']?: ReturnType<typeof setTimeout> }>({});
+  const [pendingBuy, setPendingBuy] = useState({ player1: false, player2: false, player3: false, push: false });
+  const buyTimeoutsRef = useRef<{ [key in 'player1' | 'player2' | 'player3' | 'push']?: ReturnType<typeof setTimeout> }>({});
 
   // Initialize game
   useEffect(() => {
@@ -73,8 +73,8 @@ function App() {
     const interval = setInterval(() => {
       const state = useGameStore.getState();
       const hasUserBets =
-        state.myPositions.player.length > 0 ||
-        state.myPositions.dealer.length > 0 ||
+        state.myPositions.player1.length > 0 ||
+        state.myPositions.player2.length > 0 ||
         state.myPositions.player3.length > 0 ||
         state.myPositions.push.length > 0;
       const countdownStarted = state.timer < PREDICTION_WINDOW;
@@ -139,11 +139,11 @@ function App() {
   const prevTrueOddsRef = useRef(trueOdds);
   useEffect(() => {
     const prev = prevTrueOddsRef.current;
-    const playerShift = Math.abs(trueOdds.player - prev.player);
-    const dealerShift = Math.abs(trueOdds.dealer - prev.dealer);
+    const playerShift = Math.abs(trueOdds.player1 - prev.player1);
+    const player2Shift = Math.abs(trueOdds.player2 - prev.player2);
     const player3Shift = Math.abs(trueOdds.player3 - prev.player3);
 
-    if (playerShift > 3 || dealerShift > 3 || player3Shift > 3) {
+    if (playerShift > 3 || player2Shift > 3 || player3Shift > 3) {
       rebalanceMarket(prev);
     }
 
@@ -163,7 +163,7 @@ function App() {
       case PHASES.RIVER:
         return 'RIVER';
       case PHASES.DEALER_CARDS:
-        return 'PLAYER 2 CARDS';
+        return 'PLAYER 2 / PLAYER 3 CARDS';
       case PHASES.RESOLUTION:
         return 'SETTLEMENT';
       default:
@@ -185,7 +185,7 @@ function App() {
       return 'River card will be dealt';
     }
     if (phase === PHASES.RIVER) {
-      return 'Player 2 cards will be dealt';
+      return 'Player 2 and Player 3 cards will be dealt';
     }
     if (phase === PHASES.DEALER_CARDS) {
       return 'Showdown';
@@ -194,7 +194,7 @@ function App() {
   }, [phase]);
 
   const marketLocked = isMarketLocked();
-  const totalPool = pool.player + pool.dealer + pool.player3 + pool.push;
+  const totalPool = pool.player1 + pool.player2 + pool.player3 + pool.push;
   const totalMyBets = getTotalMyBets();
   const betsLocked = timer <= 2 && phase !== PHASES.RESOLUTION;
   const canBet = phase !== PHASES.RESOLUTION && balance >= selectedBetAmount && !marketLocked && !betsLocked;
@@ -207,7 +207,7 @@ function App() {
     };
   }, []);
 
-  const handlePlaceBet = (type: 'player' | 'dealer' | 'player3' | 'push') => {
+  const handlePlaceBet = (type: 'player1' | 'player2' | 'player3' | 'push') => {
     const hasPosition = getMyBetTotal(type) > 0;
     if (!hasPosition && canBet) {
       setPendingBuy((prev) => ({ ...prev, [type]: true }));
@@ -257,13 +257,13 @@ function App() {
         <div className="w-1/2 p-4 border-r border-slate-800 flex flex-col">
           <PlayerDealerCards
             phase={phase}
-            playerCards={playerCards}
-            dealerCards={dealerCards}
+            player1Cards={player1Cards}
+            player2Cards={player2Cards}
             player3Cards={player3Cards}
             communityCards={communityCards}
-            showPlayer1Cards={revealedPlayer === 'player' || phase === PHASES.RESOLUTION}
-            showDealerCards={revealedPlayer === 'dealer' || phase === PHASES.RESOLUTION}
-            showPlayer3Cards={revealedPlayer === 'player3' || phase === PHASES.RESOLUTION}
+            showPlayer1Cards={chosenPlayer === 'player1' || phase === PHASES.RESOLUTION}
+            showPlayer2Cards={chosenPlayer === 'player2' || phase === PHASES.RESOLUTION}
+            showPlayer3Cards={chosenPlayer === 'player3' || phase === PHASES.RESOLUTION}
           />
 
           <PhaseTimer
@@ -276,8 +276,8 @@ function App() {
 
           <PriceChart
             priceHistory={priceHistory}
-            hasPlayerPosition={getMyBetTotal('player') > 0}
-            hasDealerPosition={getMyBetTotal('dealer') > 0}
+            hasPlayer1Position={getMyBetTotal('player1') > 0}
+            hasPlayer2Position={getMyBetTotal('player2') > 0}
             hasPlayer3Position={getMyBetTotal('player3') > 0}
             hasPushPosition={getMyBetTotal('push') > 0}
           />
@@ -391,40 +391,40 @@ function App() {
 
               {/* Trading Rows */}
               <BettingRow
-                type="player"
+                type="player1"
                 label="PLAYER 1 WINS"
-                impliedOdds={getImpliedOdds('player')}
+                impliedOdds={getImpliedOdds('player1')}
                 pool={pool}
                 canBet={canBet}
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
-                hasPosition={getMyBetTotal('player') > 0 && !pendingBuy.player}
-                isProcessing={pendingBuy.player}
-                shares={getTotalShares('player')}
-                amountPaid={getMyBetTotal('player')}
-                winPayout={getPotentialPayout('player')}
-                currentValue={getPositionValue('player')}
-                pnl={getUnrealizedPnL('player')}
-                onPlaceBet={() => handlePlaceBet('player')}
-                onSellPosition={() => sellPosition('player')}
+                hasPosition={getMyBetTotal('player1') > 0 && !pendingBuy.player1}
+                isProcessing={pendingBuy.player1}
+                shares={getTotalShares('player1')}
+                amountPaid={getMyBetTotal('player1')}
+                winPayout={getPotentialPayout('player1')}
+                currentValue={getPositionValue('player1')}
+                pnl={getUnrealizedPnL('player1')}
+                onPlaceBet={() => handlePlaceBet('player1')}
+                onSellPosition={() => sellPosition('player1')}
               />
               <BettingRow
-                type="dealer"
+                type="player2"
                 label="PLAYER 2 WINS"
-                impliedOdds={getImpliedOdds('dealer')}
+                impliedOdds={getImpliedOdds('player2')}
                 pool={pool}
                 canBet={canBet}
                 marketLocked={marketLocked}
                 selectedBetAmount={selectedBetAmount}
-                hasPosition={getMyBetTotal('dealer') > 0 && !pendingBuy.dealer}
-                isProcessing={pendingBuy.dealer}
-                shares={getTotalShares('dealer')}
-                amountPaid={getMyBetTotal('dealer')}
-                winPayout={getPotentialPayout('dealer')}
-                currentValue={getPositionValue('dealer')}
-                pnl={getUnrealizedPnL('dealer')}
-                onPlaceBet={() => handlePlaceBet('dealer')}
-                onSellPosition={() => sellPosition('dealer')}
+                hasPosition={getMyBetTotal('player2') > 0 && !pendingBuy.player2}
+                isProcessing={pendingBuy.player2}
+                shares={getTotalShares('player2')}
+                amountPaid={getMyBetTotal('player2')}
+                winPayout={getPotentialPayout('player2')}
+                currentValue={getPositionValue('player2')}
+                pnl={getUnrealizedPnL('player2')}
+                onPlaceBet={() => handlePlaceBet('player2')}
+                onSellPosition={() => sellPosition('player2')}
               />
               <BettingRow
                 type="player3"
@@ -486,9 +486,9 @@ function App() {
                         <span className="text-slate-500">→</span>
                         <span
                           className={
-                            item.type === 'player'
+                            item.type === 'player1'
                               ? 'text-emerald-400'
-                              : item.type === 'dealer'
+                              : item.type === 'player2'
                                 ? 'text-amber-400'
                                 : item.type === 'player3'
                                   ? 'text-purple-400'

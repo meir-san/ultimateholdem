@@ -210,12 +210,12 @@ function getCombinations<T>(array: T[], k: number): T[][] {
 }
 
 /**
- * Determines the winner between player and dealer hands
+ * Determines the winner between Player 1 and Player 2 hands
  */
-export function determineWinner(playerHand: EvaluatedHand, dealerHand: EvaluatedHand): 'player' | 'dealer' | 'push' {
+export function determineWinner(playerHand: EvaluatedHand, dealerHand: EvaluatedHand): 'player1' | 'player2' | 'push' {
   const comparison = compareHands(playerHand, dealerHand);
-  if (comparison > 0) return 'player';
-  if (comparison < 0) return 'dealer';
+  if (comparison > 0) return 'player1';
+  if (comparison < 0) return 'player2';
   return 'push';
 }
 
@@ -223,19 +223,19 @@ export function determineWinnerThree(
   playerHand: EvaluatedHand,
   dealerHand: EvaluatedHand,
   player3Hand: EvaluatedHand
-): 'player' | 'dealer' | 'player3' | 'push' {
+): 'player1' | 'player2' | 'player3' | 'push' {
   const playerVsDealer = compareHands(playerHand, dealerHand);
   const playerVsPlayer3 = compareHands(playerHand, player3Hand);
   const dealerVsPlayer3 = compareHands(dealerHand, player3Hand);
 
   if (playerVsDealer >= 0 && playerVsPlayer3 >= 0) {
     if (playerVsDealer === 0 || playerVsPlayer3 === 0) return 'push';
-    return 'player';
+    return 'player1';
   }
 
   if (playerVsDealer <= 0 && dealerVsPlayer3 >= 0) {
     if (playerVsDealer === 0 || dealerVsPlayer3 === 0) return 'push';
-    return 'dealer';
+    return 'player2';
   }
 
   if (playerVsPlayer3 <= 0 && dealerVsPlayer3 <= 0) {

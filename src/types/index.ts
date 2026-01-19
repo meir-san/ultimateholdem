@@ -33,22 +33,22 @@ export interface Position {
 }
 
 export interface Positions {
-  player: Position[];
-  dealer: Position[];
+  player1: Position[];
+  player2: Position[];
   player3: Position[];
   push: Position[];
 }
 
 export interface Pool {
-  player: number;
-  dealer: number;
+  player1: number;
+  player2: number;
   player3: number;
   push: number;
 }
 
 export interface TrueOdds {
-  player: number;
-  dealer: number;
+  player1: number;
+  player2: number;
   player3: number;
   push: number;
 }
@@ -56,7 +56,7 @@ export interface TrueOdds {
 export interface ActivityFeedItem {
   id: number;
   username: string;
-  type: 'player' | 'dealer' | 'player3' | 'push' | 'rebalance';
+  type: 'player1' | 'player2' | 'player3' | 'push' | 'rebalance';
   typeLabel: string;
   amount: number | string;
   isYou?: boolean;
@@ -66,22 +66,22 @@ export interface ActivityFeedItem {
 
 export interface PriceHistoryPoint {
   time: number;
-  player: number;
-  dealer: number;
+  player1: number;
+  player2: number;
   player3: number;
   push: number;
 }
 
 export interface RoundHistoryItem {
-  winner: 'player' | 'dealer' | 'player3' | 'push';
+  winner: 'player1' | 'player2' | 'player3' | 'push';
   handDescription: string; // e.g., "Pair of K", "4 of a kind A", "High Card 8"
 }
 
 export interface GameState {
   // Deck and cards
   deck: Card[];
-  playerCards: Card[];
-  dealerCards: Card[];
+  player1Cards: Card[];
+  player2Cards: Card[];
   player3Cards: Card[];
   communityCards: Card[];
   pendingFlop: Card[] | null;
@@ -106,7 +106,7 @@ export interface GameState {
   history: TrueOdds[];
   
   // Round state
-  roundResult: 'player' | 'dealer' | 'player3' | 'push' | null;
+  roundResult: 'player1' | 'player2' | 'player3' | 'push' | null;
   roundNumber: number;
   roundProfit: number | null;
   
@@ -122,10 +122,10 @@ export interface GameState {
   activityFeed: ActivityFeedItem[];
   priceHistory: PriceHistoryPoint[];
   showReferences: boolean;
-  revealedPlayer: 'player' | 'dealer' | 'player3';
+  chosenPlayer: 'player1' | 'player2' | 'player3';
   
   // Round history
   roundHistory: RoundHistoryItem[];
 }
 
-export type Outcome = 'player' | 'dealer' | 'player3' | 'push';
+export type Outcome = 'player1' | 'player2' | 'player3' | 'push';

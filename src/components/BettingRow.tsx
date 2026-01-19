@@ -1,7 +1,7 @@
 import type { Pool } from '../types';
 
 interface BettingRowProps {
-  type: 'player' | 'dealer' | 'player3' | 'push';
+  type: 'player1' | 'player2' | 'player3' | 'push';
   label: string;
   impliedOdds: number;
   pool: Pool;
@@ -38,14 +38,14 @@ export function BettingRow({
   onSellPosition,
 }: BettingRowProps) {
   const colors = {
-    player: {
+    player1: {
       dot: 'bg-emerald-500',
       text: 'text-emerald-400',
       bg: 'bg-emerald-500/15',
       btn: 'bg-emerald-600 hover:bg-emerald-500',
       ring: 'ring-emerald-500',
     },
-    dealer: {
+    player2: {
       dot: 'bg-amber-500',
       text: 'text-amber-400',
       bg: 'bg-amber-500/15',

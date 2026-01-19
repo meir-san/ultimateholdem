@@ -21,13 +21,13 @@ export function ResultBanner({
   payout,
 }: ResultBannerProps) {
   const messages = {
-    player: {
+    player1: {
       text: 'PLAYER 1 WINS',
       color: 'text-emerald-400',
       bg: 'bg-emerald-500/10',
       border: 'border-emerald-500/30',
     },
-    dealer: {
+    player2: {
       text: 'PLAYER 2 WINS',
       color: 'text-amber-400',
       bg: 'bg-amber-500/10',

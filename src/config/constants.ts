@@ -21,10 +21,10 @@ export const INITIAL_POOL_BASE = 1000;
 export const MONTE_CARLO_SIMULATIONS = 1000;
 export const MONTE_CARLO_SIMULATIONS_PRE_DEAL = 20000;
 
-// Exact pre-deal odds for heads-up Hold'em (win/tie/win symmetric)
+// Exact pre-deal odds for 3-player Hold'em (symmetric)
 export const PRE_DEAL_ODDS = {
-  player: 32,
-  dealer: 32,
+  player1: 32,
+  player2: 32,
   player3: 32,
   push: 4,
 } as const;
@@ -47,10 +47,10 @@ export const CROWD_BET_MAX = 80; // maximum bet amount
 export const CROWD_BET_DELAY_MIN = 500; // milliseconds
 export const CROWD_BET_DELAY_MAX = 2000; // milliseconds
 
-// Initial odds (roughly equal, slight edge to dealer)
+// Initial odds (symmetric baseline)
 export const INITIAL_ODDS = {
-  player: 32,
-  dealer: 32,
+  player1: 32,
+  player2: 32,
   player3: 32,
   push: 4,
 } as const;

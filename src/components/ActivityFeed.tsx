@@ -7,9 +7,9 @@ interface ActivityFeedProps {
 export function ActivityFeed({ items }: ActivityFeedProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'player':
+      case 'player1':
         return 'text-emerald-400';
-      case 'dealer':
+      case 'player2':
         return 'text-amber-400';
       case 'player3':
         return 'text-purple-400';

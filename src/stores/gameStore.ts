@@ -175,7 +175,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const newDeck = [...deck];
       const pCard1 = newDeck.pop()!;
       const pCard2 = newDeck.pop()!;
+      const dCard1 = newDeck.pop()!;
+      const dCard2 = newDeck.pop()!;
+      const p3Card1 = newDeck.pop()!;
+      const p3Card2 = newDeck.pop()!;
       const finalPlayerCards = [pCard1, pCard2];
+      const finalDealerCards = [dCard1, dCard2];
+      const finalPlayer3Cards = [p3Card1, p3Card2];
       const preflopDeck = [...newDeck];
       const newOdds = calculateWinProbabilities(
         finalPlayerCards,
@@ -200,6 +206,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       set({
         deck: newDeck,
         playerCards: finalPlayerCards,
+        dealerCards: finalDealerCards,
+        player3Cards: finalPlayer3Cards,
         phase: PHASES.PLAYER_CARDS,
         timer: isCertain ? 0 : PREDICTION_WINDOW, // Prediction window after both cards
         trueOdds: newOdds,
@@ -364,12 +372,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     } else if (phase === PHASES.RIVER) {
       // Phase 6: DEALER_CARDS - Deal Player 2 + Player 3 cards, then resolve immediately
       const newDeck = [...deck];
-      const dCard1 = newDeck.pop()!;
-      const dCard2 = newDeck.pop()!;
-      const p3Card1 = newDeck.pop()!;
-      const p3Card2 = newDeck.pop()!;
-      const finalDealerCards = [dCard1, dCard2];
-      const finalPlayer3Cards = [p3Card1, p3Card2];
+      const finalDealerCards =
+        dealerCards.length === 2 ? dealerCards : [newDeck.pop()!, newDeck.pop()!];
+      const finalPlayer3Cards =
+        state.player3Cards.length === 2 ? state.player3Cards : [newDeck.pop()!, newDeck.pop()!];
       
       // All cards dealt, evaluate hands and resolve immediately
       const playerHand = evaluateHand([...playerCards, ...communityCards]);

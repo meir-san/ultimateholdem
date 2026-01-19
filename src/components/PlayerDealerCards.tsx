@@ -377,17 +377,22 @@ export function PlayerDealerCards({
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {isPreDeal || (!isDealerCards && !isResolution) || dealerCards.length === 0 ? (
+          {dealerCards.length === 0 ? (
             <>
               <CardDisplay card={null} />
               <CardDisplay card={null} />
             </>
-          ) : (
+          ) : showDealerCards ? (
             <>
               {dealerCards.map((card, i) => (
                 <CardDisplay key={i} card={card} />
               ))}
               {dealerCards.length === 1 && <CardDisplay card={null} />}
+            </>
+          ) : (
+            <>
+              <CardDisplay card={null} hidden />
+              <CardDisplay card={null} hidden />
             </>
           )}
         </div>
@@ -417,17 +422,22 @@ export function PlayerDealerCards({
         </div>
 
         <div className="flex gap-2 mb-2 justify-center min-h-[96px] items-center">
-          {isPreDeal || (!isDealerCards && !isResolution) || player3Cards.length === 0 ? (
+          {player3Cards.length === 0 ? (
             <>
               <CardDisplay card={null} />
               <CardDisplay card={null} />
             </>
-          ) : (
+          ) : showPlayer3Cards ? (
             <>
               {player3Cards.map((card, i) => (
                 <CardDisplay key={i} card={card} />
               ))}
               {player3Cards.length === 1 && <CardDisplay card={null} />}
+            </>
+          ) : (
+            <>
+              <CardDisplay card={null} hidden />
+              <CardDisplay card={null} hidden />
             </>
           )}
         </div>

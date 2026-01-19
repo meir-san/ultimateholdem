@@ -60,7 +60,7 @@ export function PriceChart({
               }`}
             />
             <span className={hasPlayerPosition ? 'text-emerald-300 font-semibold' : 'text-emerald-400'}>
-              Player {hasPlayerPosition && '●'}
+              Player 1 {hasPlayerPosition && '●'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -70,7 +70,7 @@ export function PriceChart({
               }`}
             />
             <span className={hasDealerPosition ? 'text-amber-300 font-semibold' : 'text-amber-400'}>
-              Dealer {hasDealerPosition && '●'}
+              Player 2 {hasDealerPosition && '●'}
             </span>
           </div>
           <div className="flex items-center gap-1.5">

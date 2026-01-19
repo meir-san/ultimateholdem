@@ -321,7 +321,7 @@ export function PlayerDealerCards({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-emerald-500 rounded-full" />
-            <span className="font-semibold text-slate-300">PLAYER</span>
+            <span className="font-semibold text-slate-300">PLAYER 1</span>
           </div>
           <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${playerStatus.color}`}>
             {playerStatus.label}
@@ -358,7 +358,7 @@ export function PlayerDealerCards({
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 bg-amber-500 rounded-full" />
-            <span className="font-semibold text-slate-300">DEALER</span>
+            <span className="font-semibold text-slate-300">PLAYER 2</span>
           </div>
           <span className={`text-xs px-2 py-1 rounded-full font-medium min-w-[60px] text-center ${dealerStatus.color}`}>
             {dealerStatus.label}

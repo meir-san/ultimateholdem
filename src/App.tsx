@@ -148,7 +148,7 @@ function App() {
       case PHASES.PRE_DEAL:
         return 'PRE-DEAL';
       case PHASES.PLAYER_CARDS:
-        return 'PLAYER CARDS';
+        return 'PLAYER 1 CARDS';
       case PHASES.FLOP:
         return 'FLOP';
       case PHASES.TURN:
@@ -156,7 +156,7 @@ function App() {
       case PHASES.RIVER:
         return 'RIVER';
       case PHASES.DEALER_CARDS:
-        return 'DEALER CARDS';
+        return 'PLAYER 2 CARDS';
       case PHASES.RESOLUTION:
         return 'SETTLEMENT';
       default:
@@ -166,7 +166,7 @@ function App() {
 
   const getNextAction = useCallback((): string => {
     if (phase === PHASES.PRE_DEAL) {
-      return 'Player cards will be dealt';
+      return 'Player 1 cards will be dealt';
     }
     if (phase === PHASES.PLAYER_CARDS) {
       return 'Flop will be dealt';
@@ -178,7 +178,7 @@ function App() {
       return 'River card will be dealt';
     }
     if (phase === PHASES.RIVER) {
-      return 'Dealer cards will be dealt';
+      return 'Player 2 cards will be dealt';
     }
     if (phase === PHASES.DEALER_CARDS) {
       return 'Showdown';
@@ -359,7 +359,7 @@ function App() {
               {/* Trading Rows */}
               <BettingRow
                 type="player"
-                label="PLAYER WINS"
+                label="PLAYER 1 WINS"
                 impliedOdds={getImpliedOdds('player')}
                 pool={pool}
                 canBet={canBet}
@@ -376,7 +376,7 @@ function App() {
               />
               <BettingRow
                 type="dealer"
-                label="DEALER WINS"
+                label="PLAYER 2 WINS"
                 impliedOdds={getImpliedOdds('dealer')}
                 pool={pool}
                 canBet={canBet}

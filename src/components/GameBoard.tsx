@@ -25,7 +25,7 @@ export function GameBoard({
       case PHASES.PRE_DEAL:
         return 'Pre-Deal';
       case PHASES.PLAYER_CARDS:
-        return 'Player Cards';
+        return 'Player 1 Cards';
       case PHASES.FLOP:
         return 'Flop';
       case PHASES.TURN:
@@ -33,7 +33,7 @@ export function GameBoard({
       case PHASES.RIVER:
         return 'River';
       case PHASES.DEALER_CARDS:
-        return 'Dealer Cards';
+        return 'Player 2 Cards';
       case PHASES.RESOLUTION:
         return 'Resolution';
       default:
@@ -46,7 +46,7 @@ export function GameBoard({
       <div className="text-center mb-6">
         <div className="text-lg font-bold text-white mb-1">{getPhaseLabel()}</div>
         {playerFolded && (
-          <div className="text-red-400 text-sm font-semibold">Player Folded</div>
+          <div className="text-red-400 text-sm font-semibold">Player 1 Folded</div>
         )}
       </div>
 
@@ -54,7 +54,7 @@ export function GameBoard({
         {/* Dealer Cards */}
         <CardRow
           cards={dealerCards}
-          label="Dealer"
+          label="Player 2"
           hidden={!showDealerCards}
           size="md"
         />
@@ -76,7 +76,7 @@ export function GameBoard({
         {/* Player Cards */}
         <CardRow
           cards={playerCards}
-          label="Player"
+          label="Player 1"
           hidden={false}
           size="md"
         />

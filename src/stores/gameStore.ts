@@ -325,7 +325,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     state.addActivityFeedItem({
       username: 'YOU',
       type,
-      typeLabel: type === 'player' ? 'Player' : type === 'dealer' ? 'Dealer' : 'Push',
+      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : 'Push',
       amount,
       isYou: true,
     });
@@ -356,7 +356,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     state.addActivityFeedItem({
       username: 'YOU',
       type,
-      typeLabel: type === 'player' ? 'Player' : type === 'dealer' ? 'Dealer' : 'Push',
+      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : 'Push',
       amount: cashOut.toFixed(2),
       isYou: true,
       isSell: true,
@@ -407,7 +407,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     state.addActivityFeedItem({
       username: generateUsername(),
       type,
-      typeLabel: type === 'player' ? 'Player' : type === 'dealer' ? 'Dealer' : 'Push',
+      typeLabel: type === 'player' ? 'Player 1' : type === 'dealer' ? 'Player 2' : 'Push',
       amount,
     });
   },

@@ -27,7 +27,7 @@ export function RoundHistory({ roundHistory }: RoundHistoryProps) {
                       : 'text-slate-400'
                 }`}
               >
-                {isPlayer ? 'Player' : isDealer ? 'Dealer' : 'Push'}
+                {isPlayer ? 'Player 1' : isDealer ? 'Player 2' : 'Push'}
               </span>
               <span className="text-slate-500">-</span>
               <span className="text-slate-300">{item.handDescription}</span>

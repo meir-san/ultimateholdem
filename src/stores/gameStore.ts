@@ -168,7 +168,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   // Exact odds are precomputed in a worker during the prediction window.
   advancePhase: () => {
     const state = get();
-    const { phase, deck, playerCards, communityCards } = state;
+    const { phase, deck, playerCards, communityCards, dealerCards } = state;
 
     if (phase === PHASES.PRE_DEAL) {
       // Phase 2: PLAYER_CARDS - Deal both player cards simultaneously

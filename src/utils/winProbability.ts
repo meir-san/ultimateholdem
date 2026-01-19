@@ -1,7 +1,7 @@
 import type { Card } from '../types';
 import type { TrueOdds } from '../types';
 import type { Phase } from '../config/constants';
-import { MONTE_CARLO_SIMULATIONS, PHASES } from '../config/constants';
+import { MONTE_CARLO_SIMULATIONS, MONTE_CARLO_SIMULATIONS_PRE_DEAL, PHASES } from '../config/constants';
 import { shuffle } from './cardUtils';
 import { evaluateHand, determineWinner } from './pokerHands';
 
@@ -77,11 +77,18 @@ export function calculateWinProbabilities(
   }
 
   // Use Monte Carlo for all other cases
+  const simulations =
+    phase === PHASES.PRE_DEAL &&
+    playerHoleCards.length === 0 &&
+    dealerHoleCards.length === 0 &&
+    communityCards.length === 0
+      ? MONTE_CARLO_SIMULATIONS_PRE_DEAL
+      : MONTE_CARLO_SIMULATIONS;
   let playerWins = 0;
   let dealerWins = 0;
   let pushes = 0;
 
-  for (let i = 0; i < MONTE_CARLO_SIMULATIONS; i++) {
+  for (let i = 0; i < simulations; i++) {
     const result = simulateGame(playerHoleCards, dealerHoleCards, communityCards, deck, phase);
     if (result === 'player') playerWins++;
     else if (result === 'dealer') dealerWins++;
@@ -89,9 +96,9 @@ export function calculateWinProbabilities(
   }
 
   return {
-    player: (playerWins / MONTE_CARLO_SIMULATIONS) * 100,
-    dealer: (dealerWins / MONTE_CARLO_SIMULATIONS) * 100,
-    push: (pushes / MONTE_CARLO_SIMULATIONS) * 100,
+    player: (playerWins / simulations) * 100,
+    dealer: (dealerWins / simulations) * 100,
+    push: (pushes / simulations) * 100,
   };
 }
 

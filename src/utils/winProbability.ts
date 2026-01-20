@@ -66,6 +66,15 @@ export function calculateWinProbabilities(
   let player2Odds = (player2Wins / simulations) * 100;
   let player3Odds = (player3Wins / simulations) * 100;
 
+  // If any hole cards are hidden, avoid false 100% certainty from Monte Carlo noise.
+  const hiddenExists =
+    player1HoleCards.length < 2 || player2HoleCards.length < 2 || player3HoleCards.length < 2;
+  if (hiddenExists) {
+    player1Odds = Math.min(player1Odds, 99.9);
+    player2Odds = Math.min(player2Odds, 99.9);
+    player3Odds = Math.min(player3Odds, 99.9);
+  }
+
   // If some hands are hidden/unknown, enforce symmetry among the unknown players.
   const unknown: Array<{ key: 'player1' | 'player2' | 'player3'; value: number }> = [];
   if (player1HoleCards.length === 0) unknown.push({ key: 'player1', value: player1Odds });

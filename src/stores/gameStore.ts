@@ -159,6 +159,14 @@ const buildNextOddsDeck = (deck: Card[], state: GameState) => {
   return nextDeck;
 };
 
+const hasHiddenCards = (state: GameState) => {
+  return (
+    state.revealedCards.player1.some((revealed) => !revealed) ||
+    state.revealedCards.player2.some((revealed) => !revealed) ||
+    state.revealedCards.player3.some((revealed) => !revealed)
+  );
+};
+
 export const useGameStore = create<GameStore>((set, get) => ({
   // Initial state
   deck: [],
@@ -323,8 +331,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       });
       
-      // If certain, auto-advance after a short delay
-      if (isCertain) {
+      // If certain, auto-advance after a short delay (only if no hidden cards remain)
+      if (isCertain && !hasHiddenCards(state)) {
         setTimeout(() => {
           get().advancePhase();
         }, 100);
@@ -383,8 +391,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       });
       
-      // If certain, auto-advance after a short delay
-      if (isCertain) {
+      // If certain, auto-advance after a short delay (only if no hidden cards remain)
+      if (isCertain && !hasHiddenCards(state)) {
         setTimeout(() => {
           get().advancePhase();
         }, 100);
@@ -450,8 +458,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         }
       });
       
-      // If certain, auto-advance after a short delay
-      if (isCertain) {
+      // If certain, auto-advance after a short delay (only if no hidden cards remain)
+      if (isCertain && !hasHiddenCards(state)) {
         setTimeout(() => {
           get().advancePhase();
         }, 100);
@@ -494,8 +502,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         pendingOddsKey: null,
       });
       
-      // If certain, auto-advance after a short delay
-      if (isCertain) {
+      // If certain, auto-advance after a short delay (only if no hidden cards remain)
+      if (isCertain && !hasHiddenCards(state)) {
         setTimeout(() => {
           get().advancePhase();
         }, 100);

@@ -48,6 +48,17 @@ function getHoleCardDescription(holeCards: Card[], communityCards: Card[]): stri
   const sortedHole = [...holeCards].sort((a, b) => b.rank - a.rank);
   const sortedBoard = [...communityCards].sort((a, b) => b.rank - a.rank);
 
+  const getHighOrKicker = () => {
+    if (communityCards.length === 0) {
+      return `${rankToString(sortedHole[0].rank)} High`;
+    }
+    const highestBoard = sortedBoard[0].rank;
+    const highestHole = sortedHole[0].rank;
+    return highestHole > highestBoard
+      ? `${rankToString(highestHole)} High`
+      : `${rankToString(highestHole)} Kicker`;
+  };
+
   // Build rank counts for all cards
   const allCards = [...holeCards, ...communityCards];
   const rankCounts = new Map<number, number>();
@@ -59,6 +70,17 @@ function getHoleCardDescription(holeCards: Card[], communityCards: Card[]): stri
   if (allCards.length >= 5) {
     try {
       const hand = evaluateHand(allCards);
+      const boardOnlyHand = hand.cards.every((card) =>
+        communityCards.some((board) => board.rank === card.rank && board.suit === card.suit)
+      );
+
+      // If the best hand is entirely on the board, don't describe it as a made hand.
+      if (boardOnlyHand) {
+        if (holeCards.length === 2 && holeCards[0].rank === holeCards[1].rank) {
+          return `Pair of ${rankToString(holeCards[0].rank)}`;
+        }
+        return getHighOrKicker();
+      }
       
       // Check what part of this hand involves hole cards
       switch (hand.rank) {
@@ -185,22 +207,7 @@ function getHoleCardDescription(holeCards: Card[], communityCards: Card[]): stri
   }
 
   // No pairs - check if high card is on board or in hand
-  if (communityCards.length === 0) {
-    // No board yet, show high card from hole cards
-    return `${rankToString(sortedHole[0].rank)} High`;
-  }
-
-  // Board exists - check if board has higher card than hole cards
-  const highestBoard = sortedBoard[0].rank;
-  const highestHole = sortedHole[0].rank;
-
-  if (highestHole > highestBoard) {
-    // Player's hole card is the high card
-    return `${rankToString(highestHole)} High`;
-  } else {
-    // Board has the high card, show player's kicker (highest hole card)
-    return `${rankToString(highestHole)} Kicker`;
-  }
+  return getHighOrKicker();
 }
 
 /**

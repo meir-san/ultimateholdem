@@ -530,6 +530,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         player2Cards: finalPlayer2Cards,
         player3Cards: finalPlayer3Cards,
         roundResult: result,
+        revealedCards: { player1: [true, true], player2: [true, true], player3: [true, true] },
         trueOdds: {
           player1: result === 'player1' ? 100 : 0,
           player2: result === 'player2' ? 100 : 0,

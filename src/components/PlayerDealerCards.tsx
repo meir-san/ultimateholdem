@@ -28,6 +28,13 @@ function getHoleCardDescription(holeCards: Card[], communityCards: Card[]): stri
     if (communityCards.length === 0) {
       return `${rankToString(holeCards[0].rank)} High`;
     }
+    // If board pairs with the revealed card, show the pair/trips/quads
+    const boardMatches = communityCards.filter((card) => card.rank === holeCards[0].rank).length;
+    if (boardMatches >= 1) {
+      if (boardMatches >= 3) return `Four of a Kind ${rankToString(holeCards[0].rank)}`;
+      if (boardMatches === 2) return `Three of a Kind ${rankToString(holeCards[0].rank)}`;
+      return `Pair of ${rankToString(holeCards[0].rank)}`;
+    }
     // If board exists, check if board has higher card
     const boardMax = Math.max(...communityCards.map(c => c.rank));
     if (holeCards[0].rank > boardMax) {
@@ -56,11 +63,13 @@ function getHoleCardDescription(holeCards: Card[], communityCards: Card[]): stri
       // Check what part of this hand involves hole cards
       switch (hand.rank) {
         case HandRank.ROYAL_FLUSH:
+          return 'Royal Flush';
         case HandRank.STRAIGHT_FLUSH:
+          return `Straight Flush ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)} High`;
         case HandRank.FLUSH:
+          return `Flush ${rankToString(hand.cards[0].rank)} High`;
         case HandRank.STRAIGHT:
-          // These hands use board cards, show highest hole card as kicker
-          return `${rankToString(sortedHole[0].rank)} Kicker`;
+          return `Straight ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)} High`;
         
         case HandRank.FOUR_OF_KIND:
           // Always show four of a kind - this is what the player actually has

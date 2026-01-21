@@ -35,6 +35,41 @@ function getHoleCardDescription(holeCards: Card[], communityCards: Card[]): stri
       if (boardMatches === 2) return `Three of a Kind ${rankToString(holeCards[0].rank)}`;
       return `Pair of ${rankToString(holeCards[0].rank)}`;
     }
+    // If we have enough cards to evaluate, check for made hands that use the revealed card
+    if (communityCards.length >= 3) {
+      try {
+        const hand = evaluateHand([...holeCards, ...communityCards]);
+        const hole = holeCards[0];
+        const usesHole = hand.cards.some((card) => card.rank === hole.rank && card.suit === hole.suit);
+        if (usesHole) {
+          switch (hand.rank) {
+            case HandRank.ROYAL_FLUSH:
+              return 'Royal Flush';
+            case HandRank.STRAIGHT_FLUSH:
+              return `Straight Flush ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)} High`;
+            case HandRank.FLUSH:
+              return `Flush ${rankToString(hand.cards[0].rank)} High`;
+            case HandRank.STRAIGHT:
+              return `Straight ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)} High`;
+            case HandRank.FOUR_OF_KIND:
+              return `Four of a Kind ${rankToString(hand.kickers?.[0] ?? hole.rank)}`;
+            case HandRank.FULL_HOUSE:
+              return `Full House ${rankToString(hand.kickers?.[0] ?? hole.rank)}`;
+            case HandRank.THREE_OF_KIND:
+              return `Three of a Kind ${rankToString(hand.kickers?.[0] ?? hole.rank)}`;
+            case HandRank.TWO_PAIR:
+              return `Two Pair ${rankToString(hand.kickers?.[0] ?? hole.rank)}`;
+            case HandRank.PAIR:
+              return `Pair of ${rankToString(hand.kickers?.[0] ?? hole.rank)}`;
+            case HandRank.HIGH_CARD:
+            default:
+              break;
+          }
+        }
+      } catch (e) {
+        // fall through to kicker/high card logic
+      }
+    }
     // If board exists, check if board has higher card
     const boardMax = Math.max(...communityCards.map(c => c.rank));
     if (holeCards[0].rank > boardMax) {

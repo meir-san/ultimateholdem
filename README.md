@@ -1,6 +1,6 @@
 # Ultimate Hold'em Prediction Market (Prototype for Production App)
 
-This is a **prototype** of a production prediction-market game. The real app is intended for **real users** buying **real shares**, so correctness, determinism, and auditability are priorities. This prototype simulates a prediction market on a heads-up Texas Hold'em hand. Users buy shares on three outcomes: **Player 1 wins**, **Player 2 wins**, or **Push**. The market updates after each phase with new odds, and the UI shows card state, prices, and history.
+This is a **prototype** of a production prediction-market game. The real app is intended for **real users** buying **real shares**, so correctness, determinism, and auditability are priorities. This prototype simulates a prediction market on a **three-player** Texas Hold'em hand. Users buy shares on four outcomes: **Player 1 wins**, **Player 2 wins**, **Player 3 wins**, or **Push**. The market updates after each phase with new odds, and the UI shows card state, prices, and history.
 
 ## Quick Start
 
@@ -19,19 +19,26 @@ npm run dev
 
 - `src/App.tsx` - main UI layout and wiring
 - `src/stores/gameStore.ts` - game state + phase transitions
-- `src/utils/winProbability.ts` - exact odds computation
+- `src/utils/winProbability.ts` - odds computation (Monte Carlo in prototype)
 - `src/utils/pokerHands.ts` - hand evaluation + comparisons
 - `src/workers/oddsWorker.ts` - off-thread odds computation
 - `src/components/*` - UI components
 
 ## Odds System (Current Prototype)
 
-The goal is **exact, deterministic odds**:
+The goal is **exact, deterministic odds** in production. The prototype uses Monte Carlo:
 
 - **Pre-deal** uses a fixed constant: `32 / 32 / 32 / 4` (Player 1 / Player 2 / Player 3 / Push).
 - **All phases** ignore hidden cards; odds only consider **revealed** cards.
 - **Three-player odds** use **Monte Carlo** in the prototype because exact enumeration is too heavy in-browser.
-- Exact enumeration runs in a **Web Worker** and is **precomputed during the 15s prediction window** to avoid UI stalls at phase transitions.
+- Odds are computed in a **Web Worker** and **precomputed during the 15s prediction window** to reduce UI stalls.
+- If any hole cards are hidden, the UI caps displayed certainty to avoid false 100% from Monte Carlo noise.
+
+## Reveal Rules (Prototype)
+
+- The **first non‑push buy** locks the primary revealed player for the round (both cards).
+- You can manually reveal **up to 2 additional cards total** across other players.
+- After 2 manual reveals, remaining hidden cards stay hidden until resolution.
 
 See `docs/ARCHITECTURE.md` for the full flow and performance notes.
 

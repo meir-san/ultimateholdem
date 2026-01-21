@@ -17,13 +17,14 @@ The production build differs from this prototype in these specific, confirmed wa
 1. `startNewRound()` resets state and initializes a deck.
 2. Each phase (`advancePhase()`) deals cards and updates odds.
 3. A prediction window opens, then the next phase begins.
-4. After river, dealer cards are dealt and the hand is resolved.
+4. After river, Player 2 + Player 3 cards are revealed and the hand is resolved.
 
 ## Game State (`src/stores/gameStore.ts`)
 
 The Zustand store contains:
 
-- **Cards**: `playerCards`, `dealerCards`, `communityCards`
+- **Cards**: `player1Cards`, `player2Cards`, `player3Cards`, `communityCards`
+- **Reveals**: `revealedCards`, `manualRevealCount`, `firstBuyOutcome`, `chosenPlayer`
 - **Phase**: `phase`, `timer`
 - **Market**: `trueOdds`, `pool`, `crowdBets`
 - **User positions**: `myPositions`, `balance`
@@ -31,10 +32,10 @@ The Zustand store contains:
 
 ### Precomputation Fields
 
-To avoid blocking the UI at phase transitions, we precompute exact odds during the prediction window:
+To avoid blocking the UI at phase transitions, we precompute odds during the prediction window:
 
 - `pendingFlop`, `pendingTurn`, `pendingRiver` hold the next card(s) before they are revealed.
-- `pendingOdds` holds the exact odds computed in a worker for the next phase.
+- `pendingOdds` holds the odds computed in a worker for the next phase.
 - `pendingOddsPhase` + `pendingOddsKey` guard against stale worker results.
 
 ## Odds Engine (`src/utils/winProbability.ts`)
@@ -53,8 +54,15 @@ Current behavior (prototype):
 - **Pre-deal**: fixed constant `32 / 32 / 32 / 4`
 - **All phases**: odds are computed using **revealed cards only**
 - **Three-player odds**: **Monte Carlo only** (exact enumeration is too heavy in-browser)
+- **Hidden-card guard**: if any hole cards are hidden, displayed certainty is capped to avoid false 100%
 
 This is intentionally a prototype compromise. Production must use server-side exact odds.
+
+## Reveal Logic (Prototype)
+
+- The **first non‑push buy** locks the primary revealed player (both cards) for the round.
+- You can manually reveal **up to 2 additional cards** across other players via the folded-corner toggles.
+- Remaining hidden cards stay hidden until resolution.
 
 ## Worker (`src/workers/oddsWorker.ts`)
 

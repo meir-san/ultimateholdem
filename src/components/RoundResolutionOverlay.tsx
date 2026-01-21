@@ -20,10 +20,10 @@ export function RoundResolutionOverlay({ item, onClose }: RoundResolutionOverlay
       onClick={onClose}
     >
       <div
-        className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl"
+        className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-slate-800 px-5 py-4">
           <div>
             <div className="text-sm uppercase tracking-wide text-slate-400">Round Resolution</div>
             <div className="text-lg font-semibold text-white">
@@ -39,7 +39,7 @@ export function RoundResolutionOverlay({ item, onClose }: RoundResolutionOverlay
           </button>
         </div>
 
-        <div className="grid gap-4 px-6 py-6">
+        <div className="grid gap-4 px-5 py-5">
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">Player 1</div>

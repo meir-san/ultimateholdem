@@ -300,7 +300,7 @@ function getFullHandDescription(cards: Card[], communityCards: Card[]): string {
       return 'Royal Flush';
 
     case HandRank.STRAIGHT_FLUSH:
-      return `Straight Flush, ${rankToString(hand.cards[0].rank)} High`;
+      return `Straight Flush, ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)} High`;
 
     case HandRank.FOUR_OF_KIND:
       return `Four of a Kind, ${rankToString(hand.kickers![0])}, ${rankToString(hand.kickers![1])} High`;
@@ -312,7 +312,7 @@ function getFullHandDescription(cards: Card[], communityCards: Card[]): string {
       return `Flush, ${rankToString(hand.cards[0].rank)} High`;
 
     case HandRank.STRAIGHT:
-      return `Straight, ${rankToString(hand.cards[0].rank)} High`;
+      return `Straight, ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)} High`;
 
     case HandRank.THREE_OF_KIND:
       return `Three of a Kind, ${rankToString(hand.kickers![0])}, ${rankToString(hand.kickers![1])} High`;

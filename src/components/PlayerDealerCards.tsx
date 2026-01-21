@@ -494,8 +494,8 @@ export function PlayerDealerCards({
         </div>
       </div>
 
-      {communityCards.length >= 3 && (
-        <div className="col-span-3 bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
+      <div className="col-span-3 bg-slate-900/80 rounded-2xl border border-slate-800 p-4">
+        {communityCards.length >= 3 ? (
           <div className="flex gap-2 justify-center items-end">
             {/* Flop - first 3 cards with single label centered above */}
             <div className="flex flex-col items-center gap-1">
@@ -521,8 +521,12 @@ export function PlayerDealerCards({
               <CardDisplay card={communityCards[4] || null} />
             </div>
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="h-[120px] flex items-center justify-center text-xs uppercase tracking-wide text-slate-500">
+            Community Cards
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -11,6 +11,7 @@ The production build differs from this prototype in these specific, confirmed wa
 - **RNG / card generation**: production pulls RNG from Chainlink after the first bet is made (game start), then uses a formula to generate the next 22 cards in a pack. The system must be verifiably fair so players can verify the round after the fact via on-chain data (block/hash).
 - **Odds engine**: production uses a hybrid of precomputed odds plus a server-side engine (not client-side).
 - **Market pricing**: pricing is based only on odds.
+- **Liquidity**: production liquidity is provided by the Rain prediction protocol. The prototype simulates this with local pool tracking, but payouts in production are backed by Rain's liquidity pools.
 
 ## High-Level Flow
 

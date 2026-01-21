@@ -2,9 +2,10 @@ import type { RoundHistoryItem } from '../types';
 
 interface RoundHistoryProps {
   roundHistory: RoundHistoryItem[];
+  onSelect: (item: RoundHistoryItem) => void;
 }
 
-export function RoundHistory({ roundHistory }: RoundHistoryProps) {
+export function RoundHistory({ roundHistory, onSelect }: RoundHistoryProps) {
   if (roundHistory.length === 0) {
     return null;
   }
@@ -18,7 +19,13 @@ export function RoundHistory({ roundHistory }: RoundHistoryProps) {
           const isPlayer3 = item.winner === 'player3';
           
           return (
-            <div key={index} className="flex items-center gap-2">
+            <button
+              key={index}
+              type="button"
+              onClick={() => onSelect(item)}
+              className="flex items-center gap-2 rounded-lg px-2 py-1 transition hover:bg-slate-800/60"
+              aria-label="View round resolution"
+            >
               <span
                 className={`font-semibold ${
                   isPlayer1
@@ -37,7 +44,7 @@ export function RoundHistory({ roundHistory }: RoundHistoryProps) {
               {index < roundHistory.length - 1 && (
                 <span className="text-slate-600 mx-1">•</span>
               )}
-            </div>
+            </button>
           );
         })}
       </div>

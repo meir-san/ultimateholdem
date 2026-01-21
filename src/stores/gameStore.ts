@@ -554,7 +554,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
           push: result === 'push' ? 100 : 0,
         }],
         phase: PHASES.RESOLUTION,
-        roundHistory: [...state.roundHistory, { winner: result, handDescription }],
+        roundHistory: [
+          ...state.roundHistory,
+          {
+            winner: result,
+            handDescription,
+            player1Cards: player1Cards,
+            player2Cards: finalPlayer2Cards,
+            player3Cards: finalPlayer3Cards,
+            communityCards: communityCards,
+          },
+        ],
       });
       get().resolveRound(result);
     }

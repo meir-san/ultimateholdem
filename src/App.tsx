@@ -8,6 +8,7 @@ import { ResultBanner } from './components/ResultBanner';
 import { BetsLockedOverlay } from './components/BetsLockedOverlay';
 import { LiveChat } from './components/LiveChat';
 import { RoundHistory } from './components/RoundHistory';
+import { RoundResolutionOverlay } from './components/RoundResolutionOverlay';
 import { PHASES, QUICK_BET_AMOUNTS, MAX_BET_AMOUNT, CROWD_BET_DELAY_MIN, CROWD_BET_DELAY_MAX, PREDICTION_WINDOW } from './config/constants';
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
   const crowdIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showFeesOverlay, setShowFeesOverlay] = useState(false);
   const [pendingBuy, setPendingBuy] = useState({ player1: false, player2: false, player3: false, push: false });
+  const [selectedRound, setSelectedRound] = useState<null | (typeof roundHistory)[number]>(null);
   const buyTimeoutsRef = useRef<{ [key in 'player1' | 'player2' | 'player3' | 'push']?: ReturnType<typeof setTimeout> }>({});
 
   // Initialize game
@@ -252,7 +254,7 @@ function App() {
       </div>
 
       {/* Round History */}
-      <RoundHistory roundHistory={roundHistory} />
+      <RoundHistory roundHistory={roundHistory} onSelect={setSelectedRound} />
 
       <div className="flex min-h-[calc(100vh-100px)]">
         {/* LEFT SIDE - Game State */}
@@ -559,6 +561,10 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedRound && (
+        <RoundResolutionOverlay item={selectedRound} onClose={() => setSelectedRound(null)} />
       )}
 
       {/* Developer Credit */}

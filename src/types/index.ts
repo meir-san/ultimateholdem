@@ -75,6 +75,10 @@ export interface PriceHistoryPoint {
 export interface RoundHistoryItem {
   winner: 'player1' | 'player2' | 'player3' | 'push';
   handDescription: string; // e.g., "Pair of K", "4 of a kind A", "High Card 8"
+  player1Cards: Card[];
+  player2Cards: Card[];
+  player3Cards: Card[];
+  communityCards: Card[];
 }
 
 export interface GameState {

@@ -305,6 +305,7 @@ interface PlayerDealerCardsProps {
     player2: [boolean, boolean];
     player3: [boolean, boolean];
   };
+  revealLimitReached: boolean;
   onRevealCard: (player: 'player1' | 'player2' | 'player3', index: 0 | 1) => void;
 }
 
@@ -315,6 +316,7 @@ export function PlayerDealerCards({
   player3Cards,
   communityCards,
   revealedCards,
+  revealLimitReached,
   onRevealCard,
 }: PlayerDealerCardsProps) {
   const isPreDeal = phase === PHASES.PRE_DEAL;
@@ -372,8 +374,13 @@ export function PlayerDealerCards({
                     onClick={() => onRevealCard('player1', index as 0 | 1)}
                     className="absolute -top-1 -right-1 w-5 h-5"
                     aria-label="Reveal card"
+                    disabled={revealLimitReached}
                   >
-                    <span className="block w-0 h-0 border-t-[12px] border-l-[12px] border-t-slate-200/90 border-l-transparent animate-pulse" />
+                    <span
+                      className={`block w-0 h-0 border-t-[12px] border-l-[12px] border-l-transparent ${
+                        revealLimitReached ? 'border-t-slate-500/60' : 'border-t-slate-200/90 animate-pulse'
+                      }`}
+                    />
                   </button>
                 )}
               </div>
@@ -421,8 +428,13 @@ export function PlayerDealerCards({
                     onClick={() => onRevealCard('player2', index as 0 | 1)}
                     className="absolute -top-1 -right-1 w-5 h-5"
                     aria-label="Reveal card"
+                    disabled={revealLimitReached}
                   >
-                    <span className="block w-0 h-0 border-t-[12px] border-l-[12px] border-t-slate-200/90 border-l-transparent animate-pulse" />
+                    <span
+                      className={`block w-0 h-0 border-t-[12px] border-l-[12px] border-l-transparent ${
+                        revealLimitReached ? 'border-t-slate-500/60' : 'border-t-slate-200/90 animate-pulse'
+                      }`}
+                    />
                   </button>
                 )}
               </div>
@@ -470,8 +482,13 @@ export function PlayerDealerCards({
                     onClick={() => onRevealCard('player3', index as 0 | 1)}
                     className="absolute -top-1 -right-1 w-5 h-5"
                     aria-label="Reveal card"
+                    disabled={revealLimitReached}
                   >
-                    <span className="block w-0 h-0 border-t-[12px] border-l-[12px] border-t-slate-200/90 border-l-transparent animate-pulse" />
+                    <span
+                      className={`block w-0 h-0 border-t-[12px] border-l-[12px] border-l-transparent ${
+                        revealLimitReached ? 'border-t-slate-500/60' : 'border-t-slate-200/90 animate-pulse'
+                      }`}
+                    />
                   </button>
                 )}
               </div>

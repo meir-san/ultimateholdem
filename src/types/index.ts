@@ -128,6 +128,7 @@ export interface GameState {
     player2: [boolean, boolean];
     player3: [boolean, boolean];
   };
+  manualRevealCount: number;
   firstBuyOutcome: 'player1' | 'player2' | 'player3' | null;
   
   // Round history

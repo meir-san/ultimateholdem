@@ -20,6 +20,7 @@ function App() {
     player3Cards,
     communityCards,
     revealedCards,
+    manualRevealCount,
     trueOdds,
     roundResult,
     roundNumber,
@@ -263,6 +264,7 @@ function App() {
             player3Cards={player3Cards}
             communityCards={communityCards}
             revealedCards={revealedCards}
+            revealLimitReached={manualRevealCount >= 2}
             onRevealCard={revealCard}
           />
 

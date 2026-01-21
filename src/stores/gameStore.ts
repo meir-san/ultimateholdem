@@ -203,6 +203,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   chosenPlayer: 'player1',
   revealedCards: { player1: [true, true], player2: [false, false], player3: [false, false] },
   firstBuyOutcome: null,
+  manualRevealCount: 0,
   roundHistory: [],
 
   startNewRound: () => {
@@ -244,6 +245,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       chosenPlayer: 'player1',
       revealedCards: { player1: [true, true], player2: [false, false], player3: [false, false] },
       firstBuyOutcome: null,
+      manualRevealCount: 0,
       pool: initialPool,
       crowdBets: initialPool,
       // Don't reset roundHistory - keep accumulating
@@ -599,6 +601,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       },
       chosenPlayer: nextChosenPlayer,
       revealedCards: nextRevealed,
+      manualRevealCount: isFirstBuy ? 0 : state.manualRevealCount,
       firstBuyOutcome: nextFirstBuy,
       pool: {
         ...state.pool,
@@ -685,12 +688,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
+    if (state.manualRevealCount >= 2) {
+      return;
+    }
+
     const nextRevealed = {
       ...state.revealedCards,
       [player]: state.revealedCards[player].map((value, idx) => (idx === index ? true : value)) as [boolean, boolean],
     };
 
-    set({ revealedCards: nextRevealed });
+    set({ revealedCards: nextRevealed, manualRevealCount: state.manualRevealCount + 1 });
 
     const updated = get();
     const revealed = getRevealedHoleCards(updated);

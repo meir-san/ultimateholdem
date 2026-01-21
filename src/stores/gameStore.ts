@@ -561,82 +561,92 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   placeBet: (type) => {
-    const state = get();
-    if (state.phase === PHASES.RESOLUTION || state.balance < state.selectedBetAmount || state.isMarketLocked()) {
-      return;
-    }
-    
-    const amount = state.selectedBetAmount;
-    const entryOdds = state.getImpliedOdds(type) / 100;
-    const shares = calculateShares(amount, entryOdds);
-    
-    const newPosition: Position = {
-      amountPaid: amount,
-      shares,
-      entryOdds,
-    };
+    let activityAmount = 0;
+    set((current) => {
+      if (current.phase === PHASES.RESOLUTION || current.balance < current.selectedBetAmount || current.isMarketLocked()) {
+        return current;
+      }
 
-    const isFirstBuy = state.firstBuyOutcome === null && type !== 'push';
-    let nextFirstBuy = state.firstBuyOutcome;
-    let nextChosenPlayer = state.chosenPlayer;
-    let nextRevealed = state.revealedCards;
+      const amount = current.selectedBetAmount;
+      const entryOdds = current.getImpliedOdds(type) / 100;
+      const shares = calculateShares(amount, entryOdds);
+      activityAmount = amount;
 
-    if (isFirstBuy) {
-      nextFirstBuy = type;
-      nextChosenPlayer = type;
-      nextRevealed = {
-        player1: [false, false],
-        player2: [false, false],
-        player3: [false, false],
+      const newPosition: Position = {
+        amountPaid: amount,
+        shares,
+        entryOdds,
       };
-      nextRevealed[type] = [true, true];
-    }
-    
-    set({
-      balance: state.balance - amount,
-      lifetimeVolume: state.lifetimeVolume + amount,
-      myPositions: {
-        ...state.myPositions,
-        [type]: [...state.myPositions[type], newPosition],
-      },
-      chosenPlayer: nextChosenPlayer,
-      revealedCards: nextRevealed,
-      manualRevealCount: isFirstBuy ? 0 : state.manualRevealCount,
-      firstBuyOutcome: nextFirstBuy,
-      pool: {
-        ...state.pool,
-        [type]: state.pool[type] + (amount * (1 - PLATFORM_FEE)),
-      },
+
+      const isFirstBuy = current.firstBuyOutcome === null && type !== 'push';
+      let nextFirstBuy = current.firstBuyOutcome;
+      let nextChosenPlayer = current.chosenPlayer;
+      let nextRevealed = current.revealedCards;
+      let nextManualReveal = current.manualRevealCount;
+
+      if (isFirstBuy) {
+        nextFirstBuy = type;
+        nextChosenPlayer = type;
+        nextRevealed = {
+          player1: [false, false],
+          player2: [false, false],
+          player3: [false, false],
+        };
+        nextRevealed[type] = [true, true];
+        nextManualReveal = 0;
+      }
+
+      const nextState = {
+        ...current,
+        balance: current.balance - amount,
+        lifetimeVolume: current.lifetimeVolume + amount,
+        myPositions: {
+          ...current.myPositions,
+          [type]: [...current.myPositions[type], newPosition],
+        },
+        chosenPlayer: nextChosenPlayer,
+        revealedCards: nextRevealed,
+        manualRevealCount: nextManualReveal,
+        firstBuyOutcome: nextFirstBuy,
+        pool: {
+          ...current.pool,
+          [type]: current.pool[type] + (amount * (1 - PLATFORM_FEE)),
+        },
+      };
+
+      if (isFirstBuy) {
+        const revealed = getRevealedHoleCards(nextState);
+        const oddsDeck = buildOddsDeck(nextState);
+        const newOdds = calculateWinProbabilities(
+          revealed.player1,
+          revealed.player2,
+          revealed.player3,
+          nextState.communityCards,
+          oddsDeck,
+          nextState.phase
+        );
+        return {
+          ...nextState,
+          trueOdds: newOdds,
+          history: [...current.history, newOdds],
+          pendingOdds: null,
+          pendingOddsPhase: null,
+          pendingOddsKey: null,
+        };
+      }
+
+      return nextState;
     });
 
-    if (isFirstBuy) {
-      const updated = get();
-      const revealed = getRevealedHoleCards(updated);
-      const oddsDeck = buildOddsDeck(updated);
-      const newOdds = calculateWinProbabilities(
-        revealed.player1,
-        revealed.player2,
-        revealed.player3,
-        updated.communityCards,
-        oddsDeck,
-        updated.phase
-      );
-      set({
-        trueOdds: newOdds,
-        history: [...updated.history, newOdds],
-        pendingOdds: null,
-        pendingOddsPhase: null,
-        pendingOddsKey: null,
+    if (activityAmount > 0) {
+      get().addActivityFeedItem({
+        username: 'YOU',
+        type,
+        typeLabel: type === 'player1' ? 'Player 1' : type === 'player2' ? 'Player 2' : type === 'player3' ? 'Player 3' : 'Push',
+        amount: activityAmount,
+        isYou: true,
       });
     }
-    
-    state.addActivityFeedItem({
-      username: 'YOU',
-      type,
-      typeLabel: type === 'player1' ? 'Player 1' : type === 'player2' ? 'Player 2' : type === 'player3' ? 'Player 3' : 'Push',
-      amount,
-      isYou: true,
-    });
   },
 
   sellPosition: (type) => {
@@ -672,50 +682,56 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   revealCard: (player, index) => {
-    const state = get();
-    const hasCards =
-      player === 'player1'
-        ? state.player1Cards.length === 2
-        : player === 'player2'
-          ? state.player2Cards.length === 2
-          : state.player3Cards.length === 2;
+    set((current) => {
+      const hasCards =
+        player === 'player1'
+          ? current.player1Cards.length === 2
+          : player === 'player2'
+            ? current.player2Cards.length === 2
+            : current.player3Cards.length === 2;
 
-    if (!hasCards || state.phase === PHASES.PRE_DEAL || state.phase === PHASES.RESOLUTION) {
-      return;
-    }
+      if (!hasCards || current.phase === PHASES.PRE_DEAL || current.phase === PHASES.RESOLUTION) {
+        return current;
+      }
 
-    if (state.revealedCards[player][index]) {
-      return;
-    }
+      if (current.revealedCards[player][index]) {
+        return current;
+      }
 
-    if (state.manualRevealCount >= 2) {
-      return;
-    }
+      if (current.manualRevealCount >= 2) {
+        return current;
+      }
 
-    const nextRevealed = {
-      ...state.revealedCards,
-      [player]: state.revealedCards[player].map((value, idx) => (idx === index ? true : value)) as [boolean, boolean],
-    };
+      const nextRevealed = {
+        ...current.revealedCards,
+        [player]: current.revealedCards[player].map((value, idx) => (idx === index ? true : value)) as [boolean, boolean],
+      };
 
-    set({ revealedCards: nextRevealed, manualRevealCount: state.manualRevealCount + 1 });
+      const nextState = {
+        ...current,
+        revealedCards: nextRevealed,
+        manualRevealCount: current.manualRevealCount + 1,
+      };
 
-    const updated = get();
-    const revealed = getRevealedHoleCards(updated);
-    const oddsDeck = buildOddsDeck(updated);
-    const newOdds = calculateWinProbabilities(
-      revealed.player1,
-      revealed.player2,
-      revealed.player3,
-      updated.communityCards,
-      oddsDeck,
-      updated.phase
-    );
-    set({
-      trueOdds: newOdds,
-      history: [...updated.history, newOdds],
-      pendingOdds: null,
-      pendingOddsPhase: null,
-      pendingOddsKey: null,
+      const revealed = getRevealedHoleCards(nextState);
+      const oddsDeck = buildOddsDeck(nextState);
+      const newOdds = calculateWinProbabilities(
+        revealed.player1,
+        revealed.player2,
+        revealed.player3,
+        nextState.communityCards,
+        oddsDeck,
+        nextState.phase
+      );
+
+      return {
+        ...nextState,
+        trueOdds: newOdds,
+        history: [...current.history, newOdds],
+        pendingOdds: null,
+        pendingOddsPhase: null,
+        pendingOddsKey: null,
+      };
     });
   },
 

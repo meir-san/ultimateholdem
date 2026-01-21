@@ -16,7 +16,7 @@ interface RoundResolutionOverlayProps {
 export function RoundResolutionOverlay({ item, onClose }: RoundResolutionOverlayProps) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -41,24 +41,45 @@ export function RoundResolutionOverlay({ item, onClose }: RoundResolutionOverlay
 
         <div className="grid gap-4 px-5 py-5">
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+            <div
+              className={`rounded-xl border bg-slate-950/40 p-3 ${
+                item.winner === 'player1' ? 'border-emerald-500 ring-1 ring-emerald-500/60' : 'border-slate-800'
+              }`}
+            >
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-400">Player 1</div>
+              {item.winner === 'player1' && (
+                <div className="mb-2 text-xs font-semibold text-emerald-200">{item.handDescription}</div>
+              )}
               <div className="flex justify-center gap-2">
                 {item.player1Cards.map((card, index) => (
                   <CardDisplay key={index} card={card} />
                 ))}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+            <div
+              className={`rounded-xl border bg-slate-950/40 p-3 ${
+                item.winner === 'player2' ? 'border-amber-500 ring-1 ring-amber-500/60' : 'border-slate-800'
+              }`}
+            >
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-400">Player 2</div>
+              {item.winner === 'player2' && (
+                <div className="mb-2 text-xs font-semibold text-amber-200">{item.handDescription}</div>
+              )}
               <div className="flex justify-center gap-2">
                 {item.player2Cards.map((card, index) => (
                   <CardDisplay key={index} card={card} />
                 ))}
               </div>
             </div>
-            <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+            <div
+              className={`rounded-xl border bg-slate-950/40 p-3 ${
+                item.winner === 'player3' ? 'border-purple-500 ring-1 ring-purple-500/60' : 'border-slate-800'
+              }`}
+            >
               <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-400">Player 3</div>
+              {item.winner === 'player3' && (
+                <div className="mb-2 text-xs font-semibold text-purple-200">{item.handDescription}</div>
+              )}
               <div className="flex justify-center gap-2">
                 {item.player3Cards.map((card, index) => (
                   <CardDisplay key={index} card={card} />

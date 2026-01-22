@@ -579,6 +579,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
       const amount = current.selectedBetAmount;
       const entryOdds = current.getImpliedOdds(type) / 100;
+      if (!Number.isFinite(entryOdds) || entryOdds <= 0) {
+        return current;
+      }
       const shares = calculateShares(amount, entryOdds);
       activityAmount = amount;
 

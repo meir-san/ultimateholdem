@@ -25,6 +25,9 @@ export function getPoolOdds(type: 'player1' | 'player2' | 'player3' | 'push', po
 export function calculateShares(amount: number, entryOdds: number): number {
   // Apply fee at purchase - only 96.5% of your money buys shares
   // entryOdds is a DECIMAL (0-1), not a percentage
+  if (!Number.isFinite(entryOdds) || entryOdds <= 0) {
+    return 0;
+  }
   const effectiveAmount = amount * (1 - PLATFORM_FEE);
   return effectiveAmount / entryOdds;
 }

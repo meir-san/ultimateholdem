@@ -70,7 +70,7 @@ export function BettingRow({
 
   const c = colors[type];
   const outline = hasPosition;
-  const canPlaceBet = canBet && !isProcessing;
+  const canPlaceBet = canBet && !isProcessing && impliedOdds > 0;
 
   return (
     <div

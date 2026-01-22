@@ -10,6 +10,11 @@ function rankToString(rank: number): string {
   return rankMap[rank] || '?';
 }
 
+function formatKickers(ranks: number[] | undefined): string {
+  if (!ranks || ranks.length === 0) return '';
+  return ranks.map((rank) => rankToString(rank)).join(' ');
+}
+
 function formatShortHandDescription(hand: EvaluatedHand): string {
   switch (hand.rank) {
     case HandRank.ROYAL_FLUSH:
@@ -17,7 +22,7 @@ function formatShortHandDescription(hand: EvaluatedHand): string {
     case HandRank.STRAIGHT_FLUSH:
       return `Straight Flush ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}`;
     case HandRank.FOUR_OF_KIND:
-      return `4 of a kind ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}`;
+      return `4 of a kind ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}${hand.kickers?.[1] ? `, ${rankToString(hand.kickers[1])} kicker` : ''}`;
     case HandRank.FULL_HOUSE:
       return `Full House ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}`;
     case HandRank.FLUSH:
@@ -25,7 +30,7 @@ function formatShortHandDescription(hand: EvaluatedHand): string {
     case HandRank.STRAIGHT:
       return `Straight ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}`;
     case HandRank.THREE_OF_KIND:
-      return `3 of a kind ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}`;
+      return `3 of a kind ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}${hand.kickers?.[1] ? `, ${formatKickers(hand.kickers.slice(1))} kickers` : ''}`;
     case HandRank.TWO_PAIR: {
       const highPair = hand.kickers?.[0];
       const lowPair = hand.kickers?.[1];
@@ -37,15 +42,15 @@ function formatShortHandDescription(hand: EvaluatedHand): string {
     }
     case HandRank.PAIR: {
       const pairRank = hand.kickers?.[0];
-      const topKicker = hand.kickers?.[1];
-      if (pairRank && topKicker) {
-        return `Pair of ${rankToString(pairRank)}, ${rankToString(topKicker)} kicker`;
+      const kickers = hand.kickers?.slice(1);
+      if (pairRank && kickers && kickers.length > 0) {
+        return `Pair of ${rankToString(pairRank)}, ${formatKickers(kickers)} kickers`;
       }
       return `Pair of ${rankToString(pairRank ?? hand.cards[0].rank)}`;
     }
     case HandRank.HIGH_CARD:
     default:
-      return `High Card ${rankToString(hand.kickers?.[0] ?? hand.cards[0].rank)}`;
+      return `High Card ${formatKickers(hand.kickers) || rankToString(hand.cards[0].rank)}`;
   }
 }
 
